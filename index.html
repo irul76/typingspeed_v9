@@ -1,0 +1,2896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TypeCraft v2 — Master Typing, English & Code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700&family=Sora:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e2a;--bg4:#222638;
+  --accent:#7c6af7;--accent2:#5de0c5;--accent3:#f76a6a;--accent4:#f7b96a;
+  --text:#e8eaf0;--text2:#9399b2;--text3:#545872;
+  --green:#5de0a0;--red:#f76a6a;--yellow:#f7d96a;--blue:#60a5fa;
+  --border:rgba(255,255,255,0.06);--glow:0 0 20px rgba(124,106,247,0.3);
+  --font-mono:'JetBrains Mono',monospace;
+  --font-ui:'Sora',sans-serif;
+  --font-data:'Space Grotesk',sans-serif;
+  --radius:12px;--radius-lg:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-ui);min-height:100vh;overflow-x:hidden}
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.35}
+.app{position:relative;z-index:1}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar{position:fixed;left:0;top:0;height:100vh;width:64px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:2px;z-index:100;transition:width 0.3s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.sidebar:hover{width:210px}
+.sidebar-logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;font-family:var(--font-mono);color:#fff;flex-shrink:0;margin-bottom:12px;box-shadow:var(--glow)}
+.sidebar-brand{font-size:15px;font-weight:600;white-space:nowrap;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-left:8px;opacity:0;transition:opacity 0.2s}
+.sidebar:hover .sidebar-brand{opacity:1}
+.sidebar-top{display:flex;align-items:center;width:100%;padding:0 12px;margin-bottom:8px}
+.nav-item{display:flex;align-items:center;width:100%;padding:9px 12px;border-radius:10px;cursor:pointer;transition:all 0.2s;position:relative;gap:12px;white-space:nowrap}
+.nav-item:hover{background:var(--bg3)}
+.nav-item.active{background:rgba(124,106,247,0.15)}
+.nav-item.active .nav-icon{color:var(--accent)}
+.nav-icon{font-size:17px;flex-shrink:0;width:24px;text-align:center;color:var(--text3);transition:color 0.2s}
+.nav-label{font-size:13px;font-weight:500;color:var(--text2);opacity:0;transition:opacity 0.2s;pointer-events:none}
+.sidebar:hover .nav-label{opacity:1}
+.nav-item.active .nav-label{color:var(--accent)}
+.nav-section{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;padding:8px 12px 4px;width:100%;white-space:nowrap;opacity:0;transition:opacity 0.2s}
+.sidebar:hover .nav-section{opacity:1}
+.sidebar-bottom{margin-top:auto;width:100%;display:flex;flex-direction:column;gap:2px}
+
+/* ============================================================
+   MAIN / TOPBAR
+   ============================================================ */
+.main{margin-left:64px;min-height:100vh}
+.topbar{height:56px;background:rgba(13,15,20,0.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:16px;font-weight:600;color:var(--text)}
+.topbar-badge{background:rgba(124,106,247,0.15);color:var(--accent);border:1px solid rgba(124,106,247,0.3);font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;font-family:var(--font-mono)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.stat-pill{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border);padding:5px 11px;border-radius:20px;font-size:12px;font-weight:500;font-family:var(--font-data)}
+.stat-dot{width:6px;height:6px;border-radius:50%}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;cursor:pointer;flex-shrink:0}
+
+/* ============================================================
+   PAGE SYSTEM
+   ============================================================ */
+.page{display:none;padding:28px 32px;animation:fadeIn 0.3s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ============================================================
+   REUSABLE UI
+   ============================================================ */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;font-family:var(--font-ui);text-decoration:none;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#9080ff;transform:translateY(-1px);box-shadow:0 4px 20px rgba(124,106,247,0.4)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.section-title{font-size:19px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-sub{font-size:13px;color:var(--text2);margin-bottom:14px;margin-top:-10px}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,rgba(124,106,247,0.1),rgba(93,224,197,0.05));border:1px solid rgba(124,106,247,0.2);border-radius:var(--radius-lg);padding:36px 40px;margin-bottom:28px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;right:-5%;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(124,106,247,0.08) 0%,transparent 70%);pointer-events:none}
+.hero h1{font-size:30px;font-weight:700;margin-bottom:8px;line-height:1.2}
+.hero h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--text2);font-size:14px;margin-bottom:22px;max-width:520px;line-height:1.6}
+
+/* GRIDS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:transform 0.2s,border-color 0.2s}
+.stat-card:hover{transform:translateY(-2px);border-color:rgba(124,106,247,0.3)}
+.stat-card .label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+.stat-card .value{font-size:26px;font-weight:700;font-family:var(--font-data)}
+.stat-card .sub{font-size:11px;color:var(--text3);margin-top:4px}
+.modes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+@media(max-width:900px){.modes-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.modes-grid{grid-template-columns:1fr}}
+.mode-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden}
+.mode-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--card-color,var(--accent));opacity:0;transition:opacity 0.2s}
+.mode-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,0.12)}
+.mode-card:hover::before{opacity:1}
+.mode-icon{font-size:30px;margin-bottom:10px}
+.mode-card h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.mode-card p{font-size:12px;color:var(--text2);line-height:1.5}
+.mode-tag{display:inline-block;margin-top:10px;background:rgba(255,255,255,0.05);color:var(--text3);font-size:10px;padding:2px 8px;border-radius:20px;font-family:var(--font-mono)}
+
+/* TYPING AREA */
+.typing-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.mode-tabs{display:flex;gap:4px;background:var(--bg2);padding:4px;border-radius:10px;border:1px solid var(--border)}
+.mode-tab{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;color:var(--text2)}
+.mode-tab.active{background:var(--accent);color:#fff}
+.typing-config{display:flex;gap:6px;flex-wrap:wrap}
+.config-btn{padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;color:var(--text2);background:var(--bg2);border:1px solid var(--border);font-family:var(--font-data)}
+.config-btn.active{background:rgba(124,106,247,0.15);color:var(--accent);border-color:rgba(124,106,247,0.4)}
+.typing-area{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px 36px;margin-bottom:20px;position:relative}
+.translation-bar{background:rgba(93,224,197,0.06);border:1px solid rgba(93,224,197,0.15);border-radius:10px;padding:10px 16px;margin-bottom:20px;font-size:13px;color:var(--accent2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.typing-display{font-family:var(--font-mono);font-size:22px;line-height:1.9;margin-bottom:20px;user-select:none;letter-spacing:0.02em;min-height:80px;position:relative;word-break:break-word}
+.char{position:relative;transition:color 0.05s}
+.char.correct{color:var(--green)}
+.char.wrong{color:var(--red);text-decoration:underline;text-decoration-color:rgba(247,106,106,0.4)}
+.char.pending{color:var(--text3)}
+.char.current{color:var(--text)}
+.char.current::after{content:'';position:absolute;left:0;bottom:-2px;width:100%;height:2px;background:var(--accent);animation:blink 1s infinite;border-radius:2px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.typing-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:16px;font-family:var(--font-mono);color:var(--text);outline:none;transition:border-color 0.2s;caret-color:var(--accent);height:52px}
+.typing-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,106,247,0.1)}
+.typing-stats-bar{display:flex;gap:22px;flex-wrap:wrap;font-family:var(--font-data);font-size:13px;color:var(--text3);margin-top:16px}
+.ts-item{display:flex;flex-direction:column;gap:2px}
+.ts-val{font-size:20px;font-weight:700;color:var(--text);font-family:var(--font-data)}
+.ts-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3)}
+
+/* RESULT */
+.result-screen{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;text-align:center;display:none;animation:fadeIn 0.4s ease}
+.result-screen.show{display:block}
+.result-wpm{font-size:80px;font-weight:700;font-family:var(--font-data);line-height:1;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.result-label{font-size:14px;color:var(--text3);margin-bottom:24px}
+.result-stats{display:flex;justify-content:center;gap:36px;margin-bottom:28px;flex-wrap:wrap}
+.result-stat .val{font-size:26px;font-weight:700;font-family:var(--font-data);color:var(--text)}
+.result-stat .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em}
+.progress-bar-wrap{background:var(--bg3);border-radius:4px;height:4px;margin:8px 0}
+.progress-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.5s ease}
+
+/* ============================================================
+   WORD TOOLTIP (English mode)
+   ============================================================ */
+.word-tooltip{
+  position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:8px 14px;font-size:12px;
+  white-space:nowrap;pointer-events:none;z-index:200;
+  box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  opacity:0;transition:opacity 0.15s;font-family:var(--font-ui);
+}
+.word-tooltip.show{opacity:1}
+.word-tooltip .wt-word{font-weight:700;color:var(--accent);font-size:13px}
+.word-tooltip .wt-meaning{color:var(--accent2);margin-top:2px}
+.word-tooltip .wt-pos{color:var(--text3);font-size:10px;margin-top:2px;font-family:var(--font-mono)}
+
+/* ACTIVE WORD HIGHLIGHT */
+.word-group{display:inline;cursor:pointer;position:relative;border-radius:3px;transition:background 0.1s}
+.word-group.active-word{background:rgba(124,106,247,0.12)}
+.word-group:hover{background:rgba(93,224,197,0.08)}
+
+/* Grammar panel */
+.grammar-panel{
+  background:rgba(93,224,197,0.06);border:1px solid rgba(93,224,197,0.15);
+  border-radius:10px;padding:10px 16px;margin-top:12px;
+  font-size:12px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;
+  min-height:36px;
+}
+.grammar-tag{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-mono)}
+.gt-noun{background:rgba(96,165,250,0.15);color:var(--blue)}
+.gt-verb{background:rgba(124,106,247,0.15);color:var(--accent)}
+.gt-adj{background:rgba(247,185,106,0.15);color:var(--yellow)}
+.gt-adv{background:rgba(93,224,160,0.15);color:var(--green)}
+.gt-prep{background:rgba(247,106,106,0.15);color:var(--red)}
+.gt-det{background:rgba(167,139,250,0.15);color:#a78bfa}
+.gt-pron{background:rgba(93,224,197,0.15);color:var(--accent2)}
+.gt-conj{background:rgba(247,105,195,0.15);color:#f76ada}
+.grammar-label{font-size:11px;color:var(--text3);font-weight:500}
+
+/* Category Selector */
+.cat-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.cat-btn{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;border:1px solid var(--border);background:var(--bg2);color:var(--text3)}
+.cat-btn.active{background:rgba(124,106,247,0.15);color:var(--accent);border-color:rgba(124,106,247,0.3)}
+
+/* ============================================================
+   VOCABULARY
+   ============================================================ */
+.vocab-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px;margin-bottom:20px;text-align:center}
+.vocab-word{font-size:48px;font-weight:700;font-family:var(--font-data);background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.vocab-type{font-size:12px;color:var(--accent4);font-style:italic;font-family:var(--font-mono);margin-bottom:12px}
+.vocab-meaning{font-size:19px;color:var(--text2);margin-bottom:14px}
+.vocab-example{background:var(--bg3);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 8px 8px 0;font-size:13px;color:var(--text2);text-align:left;margin-bottom:16px;line-height:1.6}
+.vocab-example .ev-word{color:var(--accent);font-weight:600}
+.tts-btn{background:rgba(124,106,247,0.1);border:1px solid rgba(124,106,247,0.2);color:var(--accent);padding:4px 10px;border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font-ui);transition:all 0.2s}
+.tts-btn:hover{background:rgba(124,106,247,0.2)}
+/* Spaced rep indicator */
+.srs-bar{display:flex;gap:4px;margin-top:12px;justify-content:center}
+.srs-dot{width:10px;height:10px;border-radius:50%;background:var(--bg4)}
+.srs-dot.fill{background:var(--accent)}
+
+/* ============================================================
+   CODE MODE — UPGRADED
+   ============================================================ */
+.code-layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;min-height:480px}
+@media(max-width:800px){.code-layout{grid-template-columns:1fr}}
+.code-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column}
+.panel-header{padding:9px 16px;background:var(--bg3);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);font-family:var(--font-mono);flex-shrink:0}
+.panel-dot{width:12px;height:12px;border-radius:50%}
+.panel-dot.red{background:#f76a6a}.panel-dot.yellow{background:#f7d96a}.panel-dot.green{background:#5de0a0}
+.code-editor{flex:1;padding:16px 20px;font-family:var(--font-mono);font-size:13.5px;line-height:1.75;overflow-y:auto;position:relative;min-height:380px;cursor:text;background:var(--bg)}
+.line-numbers{color:var(--text3);user-select:none;margin-right:16px;text-align:right;min-width:22px;display:inline-block;font-size:12px}
+.code-input{position:absolute;inset:0;opacity:0;cursor:text;font-family:var(--font-mono);font-size:13.5px;resize:none;background:transparent;border:none;color:transparent;caret-color:transparent;z-index:10;padding:16px 20px}
+.preview-frame{flex:1;background:#fff;border:none;width:100%;min-height:280px}
+.challenge-info{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px}
+.challenge-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.challenge-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:10px}
+.difficulty-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-mono)}
+.diff-easy{background:rgba(93,224,160,0.1);color:var(--green);border:1px solid rgba(93,224,160,0.2)}
+.diff-medium{background:rgba(247,185,106,0.1);color:var(--yellow);border:1px solid rgba(247,185,106,0.2)}
+.diff-hard{background:rgba(247,106,106,0.1);color:var(--red);border:1px solid rgba(247,106,106,0.2)}
+.diff-expert{background:rgba(167,139,250,0.1);color:#a78bfa;border:1px solid rgba(167,139,250,0.2)}
+/* Code explanation panel */
+.code-explain-panel{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;margin-top:14px;font-size:12px;line-height:1.7;
+}
+.code-explain-panel h4{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;font-family:var(--font-mono);display:flex;align-items:center;gap:6px}
+.explain-token{margin-bottom:4px;display:flex;gap:8px;align-items:flex-start}
+.et-token{color:var(--accent2);font-family:var(--font-mono);flex-shrink:0;min-width:80px}
+.et-desc{color:var(--text2)}
+/* Syntax highlighting in display */
+.syn-keyword{color:#c792ea}
+.syn-string{color:#c3e88d}
+.syn-number{color:#f78c6c}
+.syn-comment{color:var(--text3);font-style:italic}
+.syn-tag{color:#f07178}
+.syn-attr{color:var(--yellow)}
+.syn-value{color:var(--green)}
+.syn-fn{color:#82aaff}
+.syn-punct{color:var(--text2)}
+.syn-correct{color:var(--green)}
+.syn-wrong{color:var(--red)}
+.syn-pending{color:var(--text3)}
+.syn-current{color:var(--text);border-left:2px solid var(--accent)}
+/* Active line highlight */
+.code-line-active{background:rgba(124,106,247,0.05);border-radius:4px;display:block}
+
+/* ============================================================
+   RACE MODE
+   ============================================================ */
+.race-track{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;margin-bottom:20px}
+.racer{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:10px 12px;border-radius:10px;transition:background 0.2s}
+.racer:hover{background:var(--bg3)}
+.racer-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.racer-name{font-size:13px;font-weight:500;min-width:100px}
+.racer-track{flex:1;background:var(--bg3);border-radius:20px;height:8px;overflow:hidden}
+.racer-progress{height:100%;border-radius:20px;transition:width 0.25s ease}
+.racer-wpm{font-size:12px;font-family:var(--font-data);color:var(--text3);min-width:58px;text-align:right}
+.countdown{position:fixed;inset:0;background:rgba(13,15,20,0.92);display:none;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:8px}
+.countdown-num{font-size:110px;font-weight:700;font-family:var(--font-data);background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:countPulse 0.9s ease}
+@keyframes countPulse{from{transform:scale(1.4);opacity:0}to{transform:scale(1);opacity:1}}
+.countdown-label{font-size:16px;color:var(--text2);font-family:var(--font-data)}
+
+/* ============================================================
+   LEADERBOARD
+   ============================================================ */
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th{padding:11px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid var(--border)}
+.lb-table td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:13px}
+.lb-table tr:hover td{background:var(--bg3)}
+.lb-rank{font-weight:700;font-family:var(--font-data);color:var(--text3)}
+.lb-rank.top1{color:var(--yellow)}.lb-rank.top2{color:#c0c0c0}.lb-rank.top3{color:var(--accent4)}
+.lb-name{font-weight:500;display:flex;align-items:center;gap:8px}
+.lb-wpm{font-weight:700;font-family:var(--font-data);color:var(--accent)}
+.lb-acc{color:var(--green)}
+.lb-you{background:rgba(124,106,247,0.05)!important}
+.country-flag{font-size:15px}
+
+/* ============================================================
+   STATS / ANALYTICS
+   ============================================================ */
+.chart-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:14px}
+.chart-wrap h4{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--text2)}
+.achievements-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.achievement{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;transition:all 0.2s}
+.achievement.unlocked{border-color:rgba(124,106,247,0.4);background:rgba(124,106,247,0.05)}
+.achievement:hover{transform:translateY(-2px)}
+.ach-icon{font-size:28px;margin-bottom:8px}
+.ach-name{font-size:12px;font-weight:600;margin-bottom:3px}
+.ach-desc{font-size:11px;color:var(--text3);line-height:1.4}
+.ach-locked{opacity:0.35;filter:grayscale(1)}
+/* Mastery bars */
+.mastery-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.mastery-item:last-child{border-bottom:none}
+.mastery-label{min-width:100px;font-size:13px;color:var(--text2)}
+.mastery-bar-wrap{flex:1;background:var(--bg3);border-radius:4px;height:6px}
+.mastery-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 0.8s ease}
+.mastery-pct{min-width:36px;text-align:right;font-size:12px;font-family:var(--font-data);color:var(--text3)}
+
+/* ============================================================
+   KEYBOARD HEATMAP
+   ============================================================ */
+.keyboard{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:12px}
+.kb-row{display:flex;gap:4px}
+.key{min-width:36px;height:36px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--font-mono);color:var(--text3);transition:all 0.1s;cursor:default;position:relative}
+.key.pressed{background:var(--accent);color:#fff;transform:translateY(1px)}
+.key.hot{background:rgba(247,106,106,0.2);color:var(--red);border-color:rgba(247,106,106,0.3)}
+.key.warm{background:rgba(247,185,106,0.15);color:var(--yellow);border-color:rgba(247,185,106,0.3)}
+.key.cool{background:rgba(93,224,160,0.1);color:var(--green);border-color:rgba(93,224,160,0.2)}
+.key.space{min-width:190px}.key.large{min-width:54px}.key.xl{min-width:70px}
+.key-err-count{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;font-size:9px;border-radius:8px;padding:0 4px;min-width:14px;text-align:center;display:none}
+.key.hot .key-err-count,.key.warm .key-err-count{display:block}
+
+/* ============================================================
+   AI TUTOR PANEL
+   ============================================================ */
+.ai-tutor-panel{
+  background:linear-gradient(135deg,rgba(124,106,247,0.08),rgba(93,224,197,0.04));
+  border:1px solid rgba(124,106,247,0.2);border-radius:var(--radius);
+  padding:18px 20px;margin-bottom:20px;
+}
+.ai-tutor-panel h4{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.tutor-tip{font-size:13px;color:var(--text2);line-height:1.6;display:flex;gap:10px;align-items:flex-start}
+.tutor-tip-icon{flex-shrink:0;font-size:16px}
+.tutor-rec{margin-top:8px;font-size:12px;color:var(--text3);padding-left:26px}
+.tutor-rec span{color:var(--accent2);font-weight:600;cursor:pointer}
+.tutor-rec span:hover{text-decoration:underline}
+
+/* ============================================================
+   PROFILE
+   ============================================================ */
+.profile-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 32px;margin-bottom:24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.profile-avatar{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;flex-shrink:0}
+.profile-info h2{font-size:20px;font-weight:700;margin-bottom:4px}
+.profile-info p{font-size:12px;color:var(--text2);margin-bottom:8px}
+.profile-badges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-purple{background:rgba(124,106,247,0.15);color:var(--accent);border:1px solid rgba(124,106,247,0.3)}
+.badge-teal{background:rgba(93,224,197,0.1);color:var(--accent2);border:1px solid rgba(93,224,197,0.2)}
+.badge-red{background:rgba(247,106,106,0.1);color:var(--red);border:1px solid rgba(247,106,106,0.2)}
+.badge-gold{background:rgba(247,217,106,0.1);color:var(--yellow);border:1px solid rgba(247,217,106,0.3)}
+.lvl-bar{height:4px;background:var(--bg3);border-radius:2px;margin-top:8px;overflow:hidden}
+.lvl-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width 1s ease}
+.wpm-history-grid{display:flex;gap:3px;align-items:flex-end}
+.history-bar{background:linear-gradient(to top,var(--accent),rgba(124,106,247,0.3));border-radius:2px 2px 0 0;min-width:4px;transition:height 0.5s ease;cursor:pointer}
+.history-bar:hover{background:var(--accent2)}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:700px){.settings-grid{grid-template-columns:1fr}}
+.settings-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+.settings-section h3{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;color:var(--text)}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:13px;color:var(--text2)}
+.toggle{width:42px;height:22px;background:var(--bg3);border-radius:11px;cursor:pointer;position:relative;transition:background 0.2s;border:1px solid var(--border);flex-shrink:0}
+.toggle.on{background:var(--accent);border-color:transparent}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 0.2s}
+.toggle.on::after{transform:translateX(20px)}
+.theme-buttons{display:flex;gap:6px;flex-wrap:wrap}
+.theme-btn{width:28px;height:28px;border-radius:7px;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s}
+.theme-btn.active{border-color:#fff}
+select.styled{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:8px;font-size:12px;font-family:var(--font-ui);outline:none;cursor:pointer}
+
+/* ============================================================
+   TOAST / POPUPS
+   ============================================================ */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 18px;font-size:13px;transform:translateY(80px);opacity:0;transition:all 0.3s;z-index:999;display:flex;align-items:center;gap:9px;box-shadow:0 8px 32px rgba(0,0,0,0.3);max-width:320px}
+.toast.show{transform:translateY(0);opacity:1}
+.xp-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:16px 32px;border-radius:16px;font-size:18px;font-weight:700;z-index:999;transition:all 0.3s;text-align:center;box-shadow:0 8px 40px rgba(124,106,247,0.5);pointer-events:none}
+.xp-popup.show{transform:translate(-50%,-50%) scale(1)}
+.level-up-banner{position:fixed;top:70px;left:50%;transform:translateX(-50%) translateY(-100px);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:12px 28px;border-radius:12px;font-size:15px;font-weight:700;z-index:998;transition:transform 0.4s cubic-bezier(.34,1.56,.64,1);box-shadow:0 4px 24px rgba(124,106,247,0.4);display:flex;align-items:center;gap:8px}
+.level-up-banner.show{transform:translateX(-50%) translateY(0)}
+
+/* ============================================================
+   DAILY CHALLENGE BANNER
+   ============================================================ */
+.daily-banner{
+  background:linear-gradient(135deg,rgba(247,185,106,0.1),rgba(93,224,160,0.05));
+  border:1px solid rgba(247,185,106,0.2);border-radius:var(--radius);
+  padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.daily-banner .db-icon{font-size:28px;flex-shrink:0}
+.daily-banner h4{font-size:14px;font-weight:700;color:var(--accent4);margin-bottom:3px}
+.daily-banner p{font-size:12px;color:var(--text2)}
+.daily-banner .db-action{margin-left:auto;flex-shrink:0}
+
+/* ============================================================
+   FOCUS MODE
+   ============================================================ */
+.focus-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;padding:60px;overflow-y:auto}
+.focus-overlay.show{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.focus-close{position:fixed;top:20px;right:20px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:var(--font-ui)}
+.focus-close:hover{background:var(--bg4)}
+
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* ============================================================
+   RESPONSIVE MOBILE
+   ============================================================ */
+@media(max-width:600px){
+  .main{margin-left:0}
+  .sidebar{display:none}
+  .page{padding:16px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .typing-display{font-size:16px}
+  .result-wpm{font-size:54px}
+  .hero{padding:24px}
+  .hero h1{font-size:22px}
+  .typing-area{padding:20px}
+  .code-layout{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="app">
+
+<!-- ══════════════════════════════════════════════════
+     SIDEBAR
+══════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <div class="sidebar-logo">TC</div>
+    <span class="sidebar-brand">TypeCraft</span>
+  </div>
+  <div class="nav-section">Practice</div>
+  <div class="nav-item active" onclick="navigate('dashboard')"><span class="nav-icon">⌂</span><span class="nav-label">Dashboard</span></div>
+  <div class="nav-item" onclick="navigate('typing')"><span class="nav-icon">⌨</span><span class="nav-label">Typing Test</span></div>
+  <div class="nav-item" onclick="navigate('vocab')"><span class="nav-icon">📚</span><span class="nav-label">Vocabulary</span></div>
+  <div class="nav-item" onclick="navigate('coding')"><span class="nav-icon">⟨/⟩</span><span class="nav-label">Code Typing</span></div>
+  <div class="nav-item" onclick="navigate('pytrainer')"><span class="nav-icon">🐍</span><span class="nav-label">Python Trainer</span></div>
+  <div class="nav-item" onclick="navigate('entrainer')"><span class="nav-icon">🇬🇧</span><span class="nav-label">English Trainer</span></div>
+  <div class="nav-section">Compete</div>
+  <div class="nav-item" onclick="navigate('race')"><span class="nav-icon">🏎</span><span class="nav-label">Race Mode</span></div>
+  <div class="nav-item" onclick="navigate('leaderboard')"><span class="nav-icon">🏆</span><span class="nav-label">Leaderboard</span></div>
+  <div class="nav-section">Progress</div>
+  <div class="nav-item" onclick="navigate('stats')"><span class="nav-icon">📊</span><span class="nav-label">Statistics</span></div>
+  <div class="nav-item" onclick="navigate('profile')"><span class="nav-icon">◉</span><span class="nav-label">Profile</span></div>
+  <div class="sidebar-bottom">
+    <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span></div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════════ -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <span class="topbar-title" id="topbar-title">Dashboard</span>
+    <span class="topbar-badge" id="topbar-badge">v2.0</span>
+    <div class="topbar-right">
+      <div class="stat-pill"><div class="stat-dot" style="background:var(--accent)"></div><span id="tb-wpm">0</span>&nbsp;<span style="color:var(--text3)">WPM</span></div>
+      <div class="stat-pill"><div class="stat-dot" style="background:var(--green)"></div><span id="tb-streak">0</span>&nbsp;<span style="color:var(--text3)">🔥</span></div>
+      <div class="stat-pill">⚡&nbsp;<span id="tb-xp">0</span>&nbsp;<span style="color:var(--text3)">XP</span></div>
+      <div class="avatar" id="user-avatar" onclick="navigate('profile')" title="Profile">TC</div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: DASHBOARD ══ -->
+  <div class="page active" id="page-dashboard">
+    <div class="hero">
+      <h1>Welcome back, <span id="hero-name">Typer</span>! 👋</h1>
+      <p>Platform belajar mengetik, bahasa Inggris, dan coding secara bersamaan. Tingkatkan skill-mu setiap hari!</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="navigate('typing')">⌨️ Mulai Mengetik</button>
+        <button class="btn btn-ghost" onclick="navigate('race')">🏎 Race Mode</button>
+        <button class="btn btn-ghost" onclick="startFocusMode()">🧘 Focus Mode</button>
+      </div>
+    </div>
+
+    <!-- Daily Challenge -->
+    <div class="daily-banner" id="daily-banner">
+      <div class="db-icon">🎯</div>
+      <div>
+        <h4>Daily Challenge — <span id="daily-challenge-name">Speed Run 30s</span></h4>
+        <p id="daily-challenge-desc">Complete a 30s typing test with 90%+ accuracy. Reward: 200 XP</p>
+      </div>
+      <button class="btn btn-primary btn-sm db-action" onclick="startDailyChallenge()">Start</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Best WPM</div><div class="value" id="stat-bestwpm" style="color:var(--accent)">0</div><div class="sub">words per minute</div></div>
+      <div class="stat-card"><div class="label">Accuracy</div><div class="value" id="stat-acc" style="color:var(--green)">—</div><div class="sub">average</div></div>
+      <div class="stat-card"><div class="label">Tests Done</div><div class="value" id="stat-tests" style="color:var(--accent2)">0</div><div class="sub">total sessions</div></div>
+      <div class="stat-card"><div class="label">Daily Streak</div><div class="value" id="stat-streak" style="color:var(--accent4)">0</div><div class="sub">🔥 days</div></div>
+    </div>
+
+    <!-- AI Tutor -->
+    <div class="ai-tutor-panel" id="dashboard-tutor">
+      <h4>🤖 AI Tutor Recommendation</h4>
+      <div class="tutor-tip">
+        <span class="tutor-tip-icon">💡</span>
+        <div>
+          <div id="tutor-main-tip">Selamat datang! Mulai dengan mode <strong>English Typing</strong> untuk membangun kecepatan dasar sambil belajar bahasa Inggris.</div>
+          <div class="tutor-rec" id="tutor-rec"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">🎮 Practice Modes</div>
+    <div class="modes-grid">
+      <div class="mode-card" onclick="navigate('typing')" style="--card-color:var(--accent)"><div class="mode-icon">⌨️</div><h3>English Typing</h3><p>Kalimat Inggris + terjemahan Indonesia. Grammar info + word tooltip interaktif.</p><span class="mode-tag">300+ sentences · 8 categories</span></div>
+      <div class="mode-card" onclick="navigate('vocab')" style="--card-color:var(--accent2)"><div class="mode-icon">📚</div><h3>Vocabulary</h3><p>Spaced repetition + TTS pronunciation. Kuasai kosakata dengan cara paling efektif.</p><span class="mode-tag">500+ words · SRS system</span></div>
+      <div class="mode-card" onclick="navigate('coding')" style="--card-color:#f76a6a"><div class="mode-icon">💻</div><h3>Code Typing</h3><p>17 bahasa pemrograman. Syntax explanation + live preview. Dari beginner ke expert.</p><span class="mode-tag">17 languages · explanation</span></div>
+      <div class="mode-card" onclick="navigate('race')" style="--card-color:var(--accent4)"><div class="mode-icon">🏎️</div><h3>Race Mode</h3><p>Lawan bot dengan kecepatan berbeda. Countdown seru + leaderboard real-time.</p><span class="mode-tag">4 bots · live ranking</span></div>
+      <div class="mode-card" onclick="navigate('stats')" style="--card-color:var(--green)"><div class="mode-icon">📊</div><h3>Analytics</h3><p>WPM chart, keyboard heatmap, mastery tracking, dan AI learning insight.</p><span class="mode-tag">full analytics</span></div>
+      <div class="mode-card" onclick="navigate('leaderboard')" style="--card-color:#a78bfa"><div class="mode-icon">🏆</div><h3>Leaderboard</h3><p>Bandingkan dirimu dengan pemain terbaik dunia. Raih posisi #1!</p><span class="mode-tag">global ranking</span></div>
+      <div class="mode-card" onclick="navigate('pytrainer')" style="--card-color:#5de0c5"><div class="mode-icon">🐍</div><h3>Python Trainer</h3><p>Sistem latihan typing Python ultra-lengkap. 9 level, 12 tipe soal, procedural generation. Dari pemula ke profesional!</p><span class="mode-tag">9 levels · 1000+ soal · dynamic</span></div>
+      <div class="mode-card" onclick="navigate('entrainer')" style="--card-color:#f7b96a"><div class="mode-icon">🇬🇧</div><h3>English Trainer</h3><p>Latihan kosakata Indo↔English dengan quiz, MCQ, dan sistem XP. 4 level dari Pemula hingga Profesional!</p><span class="mode-tag">4 levels · kosakata & kalimat · XP system</span></div>
+    </div>
+
+    <div class="section-title">📈 WPM History</div>
+    <div class="chart-wrap">
+      <div id="wpm-history-chart" style="display:flex;gap:3px;align-items:flex-end;height:80px;padding-top:8px"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:8px">Last 20 sessions — hover untuk detail</div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: TYPING TEST ══ -->
+  <div class="page" id="page-typing">
+    <div class="typing-header">
+      <div class="mode-tabs">
+        <div class="mode-tab active" onclick="setTypingMode('english',this)">🇬🇧 English</div>
+        <div class="mode-tab" onclick="setTypingMode('quote',this)">💬 Quote</div>
+        <div class="mode-tab" onclick="setTypingMode('words',this)">📝 Words</div>
+      </div>
+      <div class="typing-config">
+        <button class="config-btn active" onclick="setTimeLimit(30,this)">30s</button>
+        <button class="config-btn" onclick="setTimeLimit(60,this)">60s</button>
+        <button class="config-btn" onclick="setTimeLimit(120,this)">120s</button>
+        <button class="config-btn" id="level-btn" onclick="cycleLevel(this)">🟢 Beginner</button>
+        <button class="config-btn" onclick="startFocusMode()" title="Focus Mode">🧘</button>
+      </div>
+    </div>
+
+    <!-- Category selector (English mode) -->
+    <div id="english-cat-wrap" class="cat-selector">
+      <button class="cat-btn active" onclick="setEnglishCat('all',this)">All</button>
+      <button class="cat-btn" onclick="setEnglishCat('conversation',this)">Conversation</button>
+      <button class="cat-btn" onclick="setEnglishCat('business',this)">Business</button>
+      <button class="cat-btn" onclick="setEnglishCat('technology',this)">Technology</button>
+      <button class="cat-btn" onclick="setEnglishCat('motivation',this)">Motivation</button>
+      <button class="cat-btn" onclick="setEnglishCat('academic',this)">Academic</button>
+    </div>
+
+    <div class="translation-bar" id="translation-bar">
+      🇮🇩 <span id="translation-text">Mulai mengetik untuk melihat terjemahan kalimat ini</span>
+      <button class="tts-btn" onclick="speakText()" id="tts-btn" style="margin-left:auto">🔊 Dengar</button>
+    </div>
+
+    <div class="typing-area" id="main-typing-area">
+      <div class="typing-display" id="typing-display"><span id="typing-text-chars"></span></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div style="font-size:30px;font-weight:700;font-family:var(--font-data);color:var(--accent);min-width:46px;text-align:center" id="timer-display">—</div>
+        <div style="flex:1"><div class="progress-bar-wrap"><div class="progress-bar" id="timer-bar" style="width:100%"></div></div></div>
+        <button class="btn btn-ghost btn-sm" onclick="resetTest()">↺ Reset</button>
+      </div>
+      <input type="text" id="typing-input" class="typing-input" placeholder="Mulai ketik di sini untuk memulai..." oninput="handleTypingInput(event)" onkeydown="handleTypingKey(event)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <div class="typing-stats-bar">
+        <div class="ts-item"><div class="ts-val" id="live-wpm">0</div><div class="ts-label">WPM</div></div>
+        <div class="ts-item"><div class="ts-val" id="live-acc">100%</div><div class="ts-label">Accuracy</div></div>
+        <div class="ts-item"><div class="ts-val" id="live-chars">0</div><div class="ts-label">Chars</div></div>
+        <div class="ts-item"><div class="ts-val" id="live-errors">0</div><div class="ts-label">Errors</div></div>
+        <div class="ts-item"><div class="ts-val" id="live-cpm">0</div><div class="ts-label">CPM</div></div>
+      </div>
+      <!-- Grammar panel -->
+      <div class="grammar-panel" id="grammar-panel" style="display:none">
+        <span class="grammar-label">Grammar:</span>
+        <span id="grammar-tags"></span>
+      </div>
+    </div>
+
+    <!-- Result Screen -->
+    <div class="result-screen" id="result-screen">
+      <div style="font-size:24px;margin-bottom:8px">🎉 Test Selesai!</div>
+      <div class="result-wpm" id="res-wpm">0</div>
+      <div class="result-label">words per minute</div>
+      <div class="result-stats">
+        <div class="result-stat"><div class="val" id="res-acc">—</div><div class="lbl">Accuracy</div></div>
+        <div class="result-stat"><div class="val" id="res-chars">—</div><div class="lbl">Chars</div></div>
+        <div class="result-stat"><div class="val" id="res-errors">—</div><div class="lbl">Errors</div></div>
+        <div class="result-stat"><div class="val" id="res-cpm">—</div><div class="lbl">CPM</div></div>
+        <div class="result-stat"><div class="val" id="res-xp" style="color:var(--accent)">+0</div><div class="lbl">XP Earned</div></div>
+      </div>
+      <!-- AI feedback -->
+      <div id="result-ai-feedback" style="background:var(--bg3);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--text2);text-align:left"></div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="resetTest()">↺ Try Again</button>
+        <button class="btn btn-ghost" onclick="navigate('stats')">📊 View Stats</button>
+        <button class="btn btn-ghost" onclick="navigate('leaderboard')">🏆 Leaderboard</button>
+      </div>
+    </div>
+
+    <div id="keyboard-section">
+      <div class="section-title" style="margin-top:28px">⌨️ Keyboard Heatmap</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">🔴 Banyak error &nbsp;·&nbsp; 🟡 Sedikit error &nbsp;·&nbsp; 🟢 Sempurna</div>
+      <div class="keyboard" id="keyboard-viz"></div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: VOCABULARY ══ -->
+  <div class="page" id="page-vocab">
+    <div class="typing-header">
+      <div style="font-size:19px;font-weight:700">📚 Vocabulary Practice</div>
+      <div class="typing-config">
+        <button class="config-btn active" onclick="setVocabCat('all',this)">All</button>
+        <button class="config-btn" onclick="setVocabCat('common',this)">Common</button>
+        <button class="config-btn" onclick="setVocabCat('business',this)">Business</button>
+        <button class="config-btn" onclick="setVocabCat('academic',this)">Academic</button>
+        <button class="config-btn" onclick="setVocabCat('tech',this)">Tech</button>
+      </div>
+    </div>
+
+    <div class="vocab-card">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px">
+        <div class="vocab-word" id="vocab-word">Hello</div>
+        <button class="tts-btn" onclick="speakVocab()" style="margin-top:0">🔊</button>
+      </div>
+      <div class="vocab-type" id="vocab-type">interjection</div>
+      <div class="vocab-meaning" id="vocab-meaning">Halo / Hai</div>
+      <div class="vocab-example">
+        "<span class="ev-word" id="vocab-ex-en">Hello, how are you doing today?</span>"<br>
+        <span style="color:var(--text3);font-size:12px" id="vocab-ex-id">"Halo, bagaimana kabar kamu hari ini?"</span>
+      </div>
+      <!-- SRS indicator -->
+      <div class="srs-bar" id="vocab-srs-bar"></div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+        <button class="btn btn-ghost btn-sm" onclick="markVocab('hard')">😟 Hard</button>
+        <button class="btn btn-ghost btn-sm" onclick="markVocab('medium')">😐 Medium</button>
+        <button class="btn btn-primary btn-sm" onclick="markVocab('easy')">😊 Easy → Next</button>
+      </div>
+    </div>
+
+    <div class="typing-area">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;font-family:var(--font-mono)">// Ketik kalimat contoh di bawah ini:</div>
+      <div class="typing-display" id="vocab-typing-display" style="font-size:18px;margin-bottom:12px"></div>
+      <input type="text" class="typing-input" id="vocab-input" placeholder="Ketik kalimat contoh di sini..." oninput="handleVocabInput(event)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="height:auto;padding:11px 14px;font-size:14px">
+      <div class="typing-stats-bar">
+        <div class="ts-item"><div class="ts-val" id="vocab-score" style="color:var(--accent)">0</div><div class="ts-label">Score</div></div>
+        <div class="ts-item"><div class="ts-val" id="vocab-combo">×1</div><div class="ts-label">Combo</div></div>
+        <div class="ts-item"><div class="ts-val" id="vocab-learned">0</div><div class="ts-label">Learned</div></div>
+        <div class="ts-item"><div class="ts-val" id="vocab-mastery">0%</div><div class="ts-label">Mastery</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: CODE TYPING ══ -->
+  <div class="page" id="page-coding">
+    <div class="typing-header">
+      <div style="font-size:19px;font-weight:700">💻 Code Typing</div>
+      <div class="typing-config" id="lang-btns">
+        <button class="config-btn active" onclick="setLang('html',this)">HTML</button>
+        <button class="config-btn" onclick="setLang('css',this)">CSS</button>
+        <button class="config-btn" onclick="setLang('js',this)">JavaScript</button>
+        <button class="config-btn" onclick="setLang('py',this)">Python</button>
+        <button class="config-btn" onclick="setLang('java',this)">Java</button>
+        <button class="config-btn" onclick="setLang('ts',this)">TypeScript</button>
+        <button class="config-btn" onclick="setLang('cpp',this)">C++</button>
+        <button class="config-btn" onclick="setLang('php',this)">PHP</button>
+        <button class="config-btn" onclick="setLang('sql',this)">SQL</button>
+      </div>
+    </div>
+
+    <div class="challenge-info">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="challenge-title" id="challenge-title">Button Component</div>
+          <div class="challenge-desc" id="challenge-desc">Create a stylish HTML button. Type exactly as shown.</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="difficulty-badge diff-easy" id="challenge-diff">Easy</span>
+          <button class="btn btn-ghost btn-sm" onclick="nextChallenge()">Next ⟶</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleExplanation()">💡 Explain</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-layout">
+      <div class="code-panel">
+        <div class="panel-header">
+          <div class="panel-dot red"></div><div class="panel-dot yellow"></div><div class="panel-dot green"></div>
+          <span style="margin-left:8px;flex:1" id="panel-filename">index.html</span>
+          <span id="code-wpm-display" style="color:var(--accent)">0 WPM</span>
+        </div>
+        <div class="code-editor" id="code-editor" onclick="document.getElementById('code-hidden-input').focus()">
+          <div id="code-display"></div>
+          <textarea id="code-hidden-input" class="code-input" oninput="handleCodeInput(event)" onkeydown="handleCodeKey(event)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <div class="code-panel">
+        <div class="panel-header">
+          <div class="panel-dot red"></div><div class="panel-dot yellow"></div><div class="panel-dot green"></div>
+          <span style="margin-left:8px" id="preview-label">Live Preview</span>
+        </div>
+        <iframe id="preview-frame" class="preview-frame" sandbox="allow-scripts"></iframe>
+      </div>
+    </div>
+
+    <!-- Code Explanation Panel -->
+    <div class="code-explain-panel" id="code-explain-panel" style="display:none">
+      <h4>💡 Code Explanation</h4>
+      <div id="explain-tokens"></div>
+    </div>
+
+    <div class="typing-stats-bar" style="margin-top:14px">
+      <div class="ts-item"><div class="ts-val" id="code-wpm">0</div><div class="ts-label">WPM</div></div>
+      <div class="ts-item"><div class="ts-val" id="code-acc">100%</div><div class="ts-label">Accuracy</div></div>
+      <div class="ts-item"><div class="ts-val" id="code-progress">0%</div><div class="ts-label">Progress</div></div>
+      <div class="ts-item"><div class="ts-val" id="code-errors">0</div><div class="ts-label">Errors</div></div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: PYTHON TRAINER ══ -->
+  <div class="page" id="page-pytrainer">
+    <div class="typing-header" style="flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">🐍</span>
+        <div>
+          <div style="font-size:19px;font-weight:700">Python Typing Trainer</div>
+          <div style="font-size:12px;color:var(--text3)">Latihan typing Python realistis — dari pemula ke profesional</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button class="config-btn active" id="py-level-btn" onclick="pyOpenLevelModal()">📊 Level 1 — Basic</button>
+        <button class="config-btn" id="py-mode-label" onclick="pyOpenModeModal()">⚙️ Mode: Ketik Ulang</button>
+        <button class="config-btn" onclick="pyGenerateQuestion()">🔄 Soal Baru</button>
+        <button class="config-btn" onclick="pyToggleHint()" id="py-hint-btn">💡 Hint</button>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;min-width:180px">
+        <div style="font-size:28px;font-weight:700;font-family:var(--font-data);color:var(--accent)" id="py-xp-display">0</div>
+        <div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">XP Total</div>
+        <div style="font-size:12px;color:var(--accent2)" id="py-rank-label">Pemula Python</div></div>
+      </div>
+      <div style="flex:1;min-width:160px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px">
+          <span id="py-xp-bar-label">Level Progress</span><span id="py-xp-bar-pct">0%</span>
+        </div>
+        <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">
+          <div id="py-xp-bar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s ease;width:0%"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;font-family:var(--font-data)">
+        <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent4)" id="py-combo-display">x1</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Combo</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--green)" id="py-streak-display">0</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Streak</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:700;color:var(--accent2)" id="py-done-display">0</div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Done</div></div>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:12px;font-weight:700;font-family:var(--font-mono);color:var(--accent);margin-bottom:4px" id="py-q-type-label">KETIK ULANG CODE</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6" id="py-q-instruction">Ketik ulang code Python di bawah ini dengan tepat.</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0">
+        <span class="difficulty-badge diff-easy" id="py-diff-badge">Basic</span>
+        <span style="background:rgba(93,224,197,0.1);color:var(--accent2);border:1px solid rgba(93,224,197,0.2);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-mono)" id="py-topic-badge">Variables</span>
+      </div>
+    </div>
+    <div id="py-hint-panel" style="display:none;background:rgba(247,185,106,0.07);border:1px solid rgba(247,185,106,0.2);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--accent4);line-height:1.6">
+      💡 <span id="py-hint-text-inner">Hint muncul di sini</span>
+    </div>
+    <div class="typing-area" id="py-typing-area">
+      <div id="py-retype-zone">
+        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+          <span>// <span id="py-filename">main.py</span></span>
+          <span id="py-char-counter" style="color:var(--text3)">0 / 0</span>
+        </div>
+        <div id="py-code-display" style="font-family:var(--font-mono);font-size:14px;line-height:1.85;margin-bottom:14px;user-select:none;background:var(--bg);border-radius:8px;padding:14px 16px;border:1px solid var(--border)"></div>
+        <textarea id="py-typing-input" class="typing-input" rows="5"
+          style="height:auto;font-size:14px;padding:12px 14px;line-height:1.75;resize:vertical;font-family:var(--font-mono)"
+          placeholder="Ketik code Python di sini..."
+          oninput="pyHandleInput(event)" onkeydown="pyHandleKey(event)"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+      </div>
+      <div id="py-predict-zone" style="display:none">
+        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px">// Prediksi output code berikut:</div>
+        <div id="py-predict-code" style="font-family:var(--font-mono);font-size:14px;line-height:1.85;background:var(--bg);border-radius:8px;padding:14px 16px;border:1px solid var(--border);margin-bottom:12px"></div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Output yang dihasilkan adalah...</div>
+        <input type="text" id="py-predict-input" class="typing-input"
+          style="height:auto;font-size:14px;padding:11px 14px;font-family:var(--font-mono)"
+          placeholder="Ketik prediksi output kamu..."
+          oninput="pyHandlePredictInput(event)" onkeydown="pyHandlePredictKey(event)"
+          autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      </div>
+      <div id="py-mcq-zone" style="display:none">
+        <div id="py-mcq-question" style="font-size:14px;color:var(--text2);margin-bottom:14px;line-height:1.7;font-family:var(--font-mono)"></div>
+        <div id="py-mcq-options" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div id="py-arrange-zone" style="display:none">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Klik potongan code dalam urutan yang benar:</div>
+        <div id="py-arrange-pieces" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px"></div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;font-family:var(--font-mono)">// Hasil susunanmu:</div>
+        <div id="py-arrange-result" style="font-family:var(--font-mono);font-size:13px;line-height:1.75;background:var(--bg);border-radius:8px;padding:12px 14px;border:1px solid var(--border);min-height:44px;color:var(--text2);white-space:pre-wrap"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary btn-sm" onclick="pyArrangeCheck()">Cek Jawaban</button>
+          <button class="btn btn-ghost btn-sm" onclick="pyArrangeReset()">Reset</button>
+        </div>
+      </div>
+      <div class="typing-stats-bar" style="margin-top:16px">
+        <div class="ts-item"><div class="ts-val" id="py-wpm">0</div><div class="ts-label">WPM</div></div>
+        <div class="ts-item"><div class="ts-val" id="py-acc">100%</div><div class="ts-label">Accuracy</div></div>
+        <div class="ts-item"><div class="ts-val" id="py-progress">0%</div><div class="ts-label">Progress</div></div>
+        <div class="ts-item"><div class="ts-val" id="py-errors">0</div><div class="ts-label">Errors</div></div>
+      </div>
+    </div>
+    <div id="py-result-panel" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px 32px;text-align:center;animation:fadeIn .3s ease">
+      <div id="py-result-icon" style="font-size:44px;margin-bottom:8px">🎉</div>
+      <div id="py-result-title" style="font-size:20px;font-weight:700;margin-bottom:4px">Benar!</div>
+      <div id="py-result-msg" style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6"></div>
+      <div style="display:flex;justify-content:center;gap:28px;margin-bottom:20px;flex-wrap:wrap">
+        <div><div style="font-size:24px;font-weight:700;font-family:var(--font-data);color:var(--accent)" id="py-res-xp">+0</div><div style="font-size:11px;color:var(--text3)">XP</div></div>
+        <div><div style="font-size:24px;font-weight:700;font-family:var(--font-data);color:var(--accent4)" id="py-res-combo">x1</div><div style="font-size:11px;color:var(--text3)">Combo</div></div>
+        <div><div style="font-size:24px;font-weight:700;font-family:var(--font-data);color:var(--green)" id="py-res-acc">100%</div><div style="font-size:11px;color:var(--text3)">Accuracy</div></div>
+      </div>
+      <div id="py-explanation-box" style="display:none;background:var(--bg3);border-radius:10px;padding:14px 16px;text-align:left;margin-bottom:18px;font-size:12px;line-height:1.7">
+        <div style="font-weight:700;color:var(--accent);margin-bottom:8px;font-family:var(--font-mono)">Penjelasan Code:</div>
+        <div id="py-explanation-text" style="color:var(--text2);font-family:var(--font-mono);white-space:pre-wrap"></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="pyNextQuestion()">Soal Berikutnya</button>
+        <button class="btn btn-ghost" onclick="pyToggleExplanation()">Lihat Penjelasan</button>
+        <button class="btn btn-ghost" onclick="pyGenerateQuestion()">Soal Random Baru</button>
+      </div>
+    </div>
+    <div id="py-level-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;max-width:500px;width:92%;max-height:80vh;overflow-y:auto">
+        <div style="font-size:17px;font-weight:700;margin-bottom:16px">Pilih Level</div>
+        <div id="py-level-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="pyCloseLevelModal()">Tutup</button>
+      </div>
+    </div>
+    <div id="py-mode-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:center;justify-content:center">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;max-width:500px;width:92%;max-height:80vh;overflow-y:auto">
+        <div style="font-size:17px;font-weight:700;margin-bottom:16px">Pilih Mode Soal</div>
+        <div id="py-mode-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:16px" onclick="pyCloseModeModal()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: ENGLISH TRAINER ══ -->
+  <div class="page" id="page-entrainer">
+    <div style="text-align:center;color:var(--text3);padding:60px 0;font-size:14px">
+      ⏳ Memuat English Trainer...
+    </div>
+  </div>
+
+
+  <div class="page" id="page-race">
+    <div class="typing-header">
+      <div style="font-size:19px;font-weight:700">🏎 Race Mode</div>
+      <div class="typing-config">
+        <button class="config-btn active" onclick="setRaceType('bots',this)">vs Bots</button>
+        <button class="config-btn" onclick="setRaceType('practice',this)">Practice</button>
+      </div>
+    </div>
+    <div class="race-track"><div id="racers-container"></div></div>
+    <div class="typing-area">
+      <div class="typing-display" id="race-text-display" style="font-size:18px;margin-bottom:14px"></div>
+      <input type="text" id="race-input" class="typing-input" placeholder="Tekan 'Start Race' lalu mulai mengetik..." oninput="handleRaceInput(event)" onkeydown="handleRaceKey(event)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled style="height:auto;font-size:14px;padding:11px 14px">
+      <div class="typing-stats-bar">
+        <div class="ts-item"><div class="ts-val" id="race-wpm">0</div><div class="ts-label">WPM</div></div>
+        <div class="ts-item"><div class="ts-val" id="race-pos">—</div><div class="ts-label">Position</div></div>
+        <div class="ts-item"><div class="ts-val" id="race-prog">0%</div><div class="ts-label">Progress</div></div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="race-start-btn" onclick="startRace()">🚀 Start Race</button>
+  </div>
+
+  <!-- ══ PAGE: LEADERBOARD ══ -->
+  <div class="page" id="page-leaderboard">
+    <div class="typing-header">
+      <div style="font-size:19px;font-weight:700">🏆 Global Leaderboard</div>
+      <div class="typing-config">
+        <button class="config-btn active" onclick="setLbFilter('all',this)">All Time</button>
+        <button class="config-btn" onclick="setLbFilter('daily',this)">Today</button>
+        <button class="config-btn" onclick="setLbFilter('weekly',this)">Weekly</button>
+      </div>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+      <table class="lb-table"><thead><tr><th>#</th><th>Player</th><th>WPM</th><th>Accuracy</th><th>Tests</th><th>XP</th></tr></thead><tbody id="lb-tbody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- ══ PAGE: STATS ══ -->
+  <div class="page" id="page-stats">
+    <div class="section-title">📊 Your Statistics</div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Best WPM</div><div class="value" id="st-bestwpm" style="color:var(--accent)">0</div></div>
+      <div class="stat-card"><div class="label">Avg WPM</div><div class="value" id="st-avgwpm" style="color:var(--accent2)">0</div></div>
+      <div class="stat-card"><div class="label">Best Accuracy</div><div class="value" id="st-bestacc" style="color:var(--green)">—</div></div>
+      <div class="stat-card"><div class="label">Total Time</div><div class="value" id="st-time" style="color:var(--accent4)">0m</div></div>
+    </div>
+
+    <!-- AI insight -->
+    <div class="ai-tutor-panel" id="stats-tutor">
+      <h4>🤖 AI Learning Insight</h4>
+      <div class="tutor-tip"><span class="tutor-tip-icon">📈</span><div id="stats-ai-insight">Selesaikan beberapa sesi untuk mendapatkan insight personal.</div></div>
+    </div>
+
+    <div class="section-title">📈 WPM Over Time</div>
+    <div class="chart-wrap"><div id="wpm-chart-bars" style="display:flex;gap:3px;align-items:flex-end;height:100px;padding-top:8px"></div></div>
+
+    <div class="section-title">⌨️ Keyboard Heatmap</div>
+    <div class="chart-wrap">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Error frequency per key — hover key untuk melihat count</div>
+      <div class="keyboard" id="stats-keyboard"></div>
+    </div>
+
+    <div class="section-title">🎯 Topic Mastery</div>
+    <div class="chart-wrap" id="mastery-wrap">
+      <div id="mastery-list"></div>
+    </div>
+
+    <div class="section-title" style="margin-top:4px">🏅 Achievements</div>
+    <div class="achievements-grid" id="achievements-grid"></div>
+  </div>
+
+  <!-- ══ PAGE: PROFILE ══ -->
+  <div class="page" id="page-profile">
+    <div class="profile-card">
+      <div class="profile-avatar" id="prof-avatar">TC</div>
+      <div class="profile-info">
+        <h2 id="prof-name">TypeCraft User</h2>
+        <p id="prof-sub">🇮🇩 Indonesia · Member since 2024</p>
+        <div class="profile-badges">
+          <span class="badge badge-purple">⚡ Level <span id="prof-level">1</span></span>
+          <span class="badge badge-teal"><span id="prof-xp">0</span> XP</span>
+          <span class="badge badge-red">🔥 <span id="prof-streak">0</span> day streak</span>
+          <span class="badge badge-gold" id="prof-rank-badge">🥉 Beginner</span>
+        </div>
+        <div class="lvl-bar" style="margin-top:10px;max-width:280px"><div class="lvl-fill" id="prof-xp-bar" style="width:0%"></div></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px"><span id="prof-xp-current">0</span> / <span id="prof-xp-next">500</span> XP ke level berikutnya</div>
+      </div>
+      <div style="margin-left:auto;display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="navigate('typing')">Start Practice</button>
+        <button class="btn btn-ghost btn-sm" onclick="navigate('settings')">Edit Profile</button>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="label">Tests Completed</div><div class="value" id="prof-tests" style="color:var(--accent)">0</div></div>
+      <div class="stat-card"><div class="label">Best WPM</div><div class="value" id="prof-wpm" style="color:var(--accent2)">0</div></div>
+      <div class="stat-card"><div class="label">Vocab Learned</div><div class="value" id="prof-vocab" style="color:var(--green)">0</div></div>
+      <div class="stat-card"><div class="label">Code Completed</div><div class="value" id="prof-code" style="color:var(--accent4)">0</div></div>
+    </div>
+    <div class="section-title">🏅 Achievements</div>
+    <div class="achievements-grid" id="profile-achievements"></div>
+  </div>
+
+  <!-- ══ PAGE: SETTINGS ══ -->
+  <div class="page" id="page-settings">
+    <div class="section-title">⚙️ Settings</div>
+    <div class="settings-grid">
+      <div class="settings-section">
+        <h3>🎨 Appearance</h3>
+        <div class="setting-row"><span class="setting-label">Theme Color</span>
+          <div class="theme-buttons">
+            <div class="theme-btn active" style="background:linear-gradient(135deg,#7c6af7,#5de0c5)" onclick="setTheme('default',this)" title="Default"></div>
+            <div class="theme-btn" style="background:linear-gradient(135deg,#f76a6a,#f7b96a)" onclick="setTheme('sunset',this)" title="Sunset"></div>
+            <div class="theme-btn" style="background:linear-gradient(135deg,#3b82f6,#5de0a0)" onclick="setTheme('ocean',this)" title="Ocean"></div>
+            <div class="theme-btn" style="background:linear-gradient(135deg,#a78bfa,#ec4899)" onclick="setTheme('candy',this)" title="Candy"></div>
+            <div class="theme-btn" style="background:linear-gradient(135deg,#00ff41,#00cc33)" onclick="setTheme('matrix',this)" title="Matrix"></div>
+            <div class="theme-btn" style="background:linear-gradient(135deg,#ff6b6b,#c44dff)" onclick="setTheme('cyberpunk',this)" title="Cyberpunk"></div>
+          </div>
+        </div>
+        <div class="setting-row"><span class="setting-label">Font Size</span>
+          <select class="styled" onchange="setFontSize(this.value)"><option value="18">Small (18px)</option><option value="22" selected>Medium (22px)</option><option value="26">Large (26px)</option></select>
+        </div>
+        <div class="setting-row"><span class="setting-label">Dyslexia Font</span><div class="toggle" id="toggle-dyslexia" onclick="toggleSetting('dyslexia')"></div></div>
+      </div>
+      <div class="settings-section">
+        <h3>⌨️ Typing</h3>
+        <div class="setting-row"><span class="setting-label">Keyboard Sound</span><div class="toggle" id="toggle-sound" onclick="toggleSetting('sound')"></div></div>
+        <div class="setting-row"><span class="setting-label">Show Keyboard</span><div class="toggle on" id="toggle-keyboard" onclick="toggleSetting('keyboard')"></div></div>
+        <div class="setting-row"><span class="setting-label">Blind Mode</span><div class="toggle" id="toggle-blind" onclick="toggleSetting('blind')"></div></div>
+        <div class="setting-row"><span class="setting-label">Show Grammar</span><div class="toggle on" id="toggle-grammar" onclick="toggleSetting('grammar')"></div></div>
+      </div>
+      <div class="settings-section">
+        <h3>🎓 Learning</h3>
+        <div class="setting-row"><span class="setting-label">Show Translation</span><div class="toggle on" id="toggle-trans" onclick="toggleSetting('trans')"></div></div>
+        <div class="setting-row"><span class="setting-label">Spaced Repetition</span><div class="toggle on" id="toggle-srs" onclick="toggleSetting('srs')"></div></div>
+        <div class="setting-row"><span class="setting-label">Auto-Next Vocab</span><div class="toggle on" id="toggle-autonext" onclick="toggleSetting('autonext')"></div></div>
+        <div class="setting-row"><span class="setting-label">TTS Auto-Play</span><div class="toggle" id="toggle-tts" onclick="toggleSetting('tts')"></div></div>
+      </div>
+      <div class="settings-section">
+        <h3>👤 Profile</h3>
+        <div class="setting-row"><span class="setting-label">Username</span>
+          <input type="text" class="typing-input" id="settings-username" placeholder="Your name" style="height:34px;padding:6px 12px;font-size:12px;max-width:130px" oninput="updateUsername(this.value)">
+        </div>
+        <div class="setting-row"><span class="setting-label">Export Data</span>
+          <button class="btn btn-ghost btn-sm" onclick="exportData()">💾 Export</button>
+        </div>
+        <div class="setting-row"><span class="setting-label">Reset Progress</span>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(247,106,106,0.3)" onclick="resetProgress()">🗑️ Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Countdown Overlay -->
+<div class="countdown" id="countdown-overlay">
+  <div class="countdown-num" id="countdown-num">3</div>
+  <div class="countdown-label">Get Ready!</div>
+</div>
+
+<!-- Focus Mode Overlay -->
+<div class="focus-overlay" id="focus-overlay">
+  <button class="focus-close" onclick="closeFocusMode()">✕ Exit Focus Mode (Esc)</button>
+  <div style="width:100%;max-width:700px">
+    <div style="font-size:13px;color:var(--text3);margin-bottom:16px;text-align:center;font-family:var(--font-mono)">// FOCUS MODE — no distractions</div>
+    <div class="typing-display" id="focus-text-display" style="margin-bottom:20px;font-size:24px"></div>
+    <input type="text" id="focus-input" class="typing-input" placeholder="Start typing..." oninput="handleFocusInput(event)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    <div class="typing-stats-bar" style="margin-top:16px;justify-content:center;gap:32px">
+      <div class="ts-item" style="align-items:center"><div class="ts-val" id="focus-wpm">0</div><div class="ts-label">WPM</div></div>
+      <div class="ts-item" style="align-items:center"><div class="ts-val" id="focus-acc">100%</div><div class="ts-label">Acc</div></div>
+      <div class="ts-item" style="align-items:center"><div class="ts-val" id="focus-timer">—</div><div class="ts-label">Time</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Level Up Banner -->
+<div class="level-up-banner" id="level-up-banner">⚡ Level Up! <span id="new-level-num">2</span></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><span id="toast-icon">✓</span><span id="toast-msg">Done!</span></div>
+
+<!-- XP Popup -->
+<div class="xp-popup" id="xp-popup">+50 XP 🎉</div>
+
+<script>
+'use strict';
+// ============================================================
+// GLOBAL ERROR HANDLER — anti blank white screen
+// ============================================================
+window.onerror = function(msg, src, line, col, err) {
+  console.error('TypeCraft Error:', msg, 'at', src, line);
+  return false; // don't show default error
+};
+
+// ============================================================
+// ═══ DATA — SENTENCES (8 categories, 50+ entries) ═══
+// ============================================================
+const SENTENCES = {
+  english: [
+    // conversation
+    {en:"How was your day?",id:"Bagaimana harimu?",cat:"conversation"},
+    {en:"I am doing great, thanks for asking!",id:"Aku baik-baik saja, terima kasih sudah bertanya!",cat:"conversation"},
+    {en:"Could you please help me with this?",id:"Bisakah kamu membantuku dengan ini?",cat:"conversation"},
+    {en:"Let me know if you need anything.",id:"Beri tahu aku jika kamu butuh sesuatu.",cat:"conversation"},
+    {en:"Sorry, I did not catch what you said.",id:"Maaf, aku tidak mendengar apa yang kamu katakan.",cat:"conversation"},
+    {en:"That sounds like a great plan!",id:"Itu terdengar seperti rencana yang bagus!",cat:"conversation"},
+    {en:"I will get back to you as soon as possible.",id:"Aku akan menghubungimu sesegera mungkin.",cat:"conversation"},
+    {en:"What time does the meeting start tomorrow?",id:"Jam berapa rapat dimulai besok?",cat:"conversation"},
+    {en:"Have you eaten lunch yet today?",id:"Apakah kamu sudah makan siang hari ini?",cat:"conversation"},
+    {en:"Can we reschedule to later this week?",id:"Bisakah kita jadwal ulang ke akhir minggu ini?",cat:"conversation"},
+    // business
+    {en:"I need to finish this report by tomorrow.",id:"Aku perlu menyelesaikan laporan ini sebelum besok.",cat:"business"},
+    {en:"Please keep me updated on the progress.",id:"Tolong terus beri aku kabar terbaru mengenai perkembangannya.",cat:"business"},
+    {en:"We should schedule a meeting next week.",id:"Kita harus menjadwalkan pertemuan minggu depan.",cat:"business"},
+    {en:"The client was satisfied with the final result.",id:"Klien puas dengan hasil akhirnya.",cat:"business"},
+    {en:"We need to align on the goals before we start.",id:"Kita perlu menyamakan persepsi tentang tujuan sebelum mulai.",cat:"business"},
+    {en:"The startup raised ten million dollars in funding.",id:"Startup itu berhasil mendapatkan pendanaan sepuluh juta dolar.",cat:"business"},
+    {en:"Let us grab coffee and discuss the proposal.",id:"Ayo minum kopi dan diskusikan proposalnya.",cat:"business"},
+    {en:"I really appreciate your feedback on this.",id:"Aku sangat menghargai masukanmu mengenai ini.",cat:"business"},
+    // technology
+    {en:"Technology changes the way we work and communicate.",id:"Teknologi mengubah cara kita bekerja dan berkomunikasi.",cat:"technology"},
+    {en:"The app was built using React and Node.js.",id:"Aplikasi itu dibangun menggunakan React dan Node.js.",cat:"technology"},
+    {en:"Always back up your data before any major update.",id:"Selalu cadangkan datamu sebelum pembaruan besar apapun.",cat:"technology"},
+    {en:"Artificial intelligence is transforming every industry.",id:"Kecerdasan buatan sedang mengubah setiap industri.",cat:"technology"},
+    {en:"The API returns a JSON response with all user data.",id:"API tersebut mengembalikan respons JSON dengan semua data pengguna.",cat:"technology"},
+    {en:"Make sure to push your code to the main branch.",id:"Pastikan untuk push kode-mu ke cabang main.",cat:"technology"},
+    // motivation
+    {en:"Consistency is the key to mastering any new skill.",id:"Konsistensi adalah kunci untuk menguasai keterampilan baru apapun.",cat:"motivation"},
+    {en:"Every expert was once a beginner who never gave up.",id:"Setiap ahli dulunya adalah pemula yang tidak pernah menyerah.",cat:"motivation"},
+    {en:"Focus on progress, not perfection, and you will improve.",id:"Fokus pada kemajuan, bukan kesempurnaan, dan kamu akan berkembang.",cat:"motivation"},
+    {en:"Small daily improvements lead to stunning long-term results.",id:"Perbaikan kecil setiap hari menghasilkan hasil jangka panjang yang luar biasa.",cat:"motivation"},
+    {en:"Believe in yourself and all that you are capable of.",id:"Percayalah pada dirimu sendiri dan semua yang mampu kamu lakukan.",cat:"motivation"},
+    {en:"Success comes to those who work hard and stay patient.",id:"Kesuksesan datang pada mereka yang bekerja keras dan tetap sabar.",cat:"motivation"},
+    {en:"Dream big, work hard, and never stop learning new things.",id:"Bermimpilah besar, bekerja keras, dan jangan pernah berhenti belajar hal baru.",cat:"motivation"},
+    // academic
+    {en:"The research findings were published in a peer-reviewed journal.",id:"Temuan penelitian itu diterbitkan di jurnal yang ditinjau oleh rekan sejawat.",cat:"academic"},
+    {en:"Could you elaborate on your hypothesis?",id:"Bisakah kamu menjelaskan hipotesismu secara lebih rinci?",cat:"academic"},
+    {en:"The methodology section must be clearly explained.",id:"Bagian metodologi harus dijelaskan dengan jelas.",cat:"academic"},
+    {en:"Critical thinking is essential in academic writing.",id:"Berpikir kritis sangat penting dalam penulisan akademis.",cat:"academic"},
+    {en:"The data clearly supports the initial hypothesis.",id:"Data tersebut jelas mendukung hipotesis awal.",cat:"academic"},
+  ],
+  quote: [
+    {en:"In the middle of difficulty lies opportunity. — Albert Einstein",id:"Di tengah kesulitan terdapat peluang. — Albert Einstein",cat:"quote"},
+    {en:"It always seems impossible until it is done. — Nelson Mandela",id:"Semuanya tampak mustahil hingga akhirnya selesai dilakukan.",cat:"quote"},
+    {en:"The only way to do great work is to love what you do. — Steve Jobs",id:"Satu-satunya cara melakukan pekerjaan besar adalah mencintai apa yang kamu lakukan.",cat:"quote"},
+    {en:"Innovation distinguishes between a leader and a follower. — Steve Jobs",id:"Inovasi membedakan antara pemimpin dan pengikut.",cat:"quote"},
+    {en:"You miss one hundred percent of the shots you do not take. — Wayne Gretzky",id:"Kamu melewatkan seratus persen tembakan yang tidak kamu coba.",cat:"quote"},
+    {en:"The future belongs to those who believe in the beauty of their dreams. — Eleanor Roosevelt",id:"Masa depan milik mereka yang percaya pada keindahan impian mereka.",cat:"quote"},
+  ],
+  words: [
+    {en:"algorithm binary compile debug execute function global heap index JSON kernel logic module namespace object parse query return string toggle union value while yield zero",id:"Kata-kata teknis pemrograman",cat:"words"},
+    {en:"achieve balance create discover elevate focus generate inspire journey knowledge learn motivate nurture optimize prioritize question reflect succeed transform validate wonder",id:"Kata-kata motivasi",cat:"words"},
+    {en:"beautiful curious dynamic elegant flexible genuine humble intelligent joyful kindness luminous mindful natural optimistic passionate resilient sincere thoughtful unique vibrant wonderful",id:"Kata-kata sifat positif",cat:"words"},
+  ]
+};
+
+// ============================================================
+// ═══ GRAMMAR DATA ═══
+// ============================================================
+const GRAMMAR_MAP = {
+  // Common verbs
+  "is":"verb","are":"verb","was":"was","were":"verb","have":"verb","has":"verb","had":"verb",
+  "do":"verb","does":"verb","did":"verb","will":"verb","would":"verb","can":"verb","could":"verb",
+  "should":"verb","must":"verb","may":"verb","might":"verb","shall":"verb",
+  "go":"verb","come":"verb","take":"verb","make":"verb","get":"verb","give":"verb","know":"verb",
+  "think":"verb","see":"verb","look":"verb","want":"verb","use":"verb","find":"verb","tell":"verb",
+  "ask":"verb","seem":"verb","feel":"verb","try":"verb","leave":"verb","call":"verb","keep":"verb",
+  "let":"verb","begin":"verb","show":"verb","hear":"verb","play":"verb","run":"verb","move":"verb",
+  "live":"verb","believe":"verb","hold":"verb","bring":"verb","happen":"verb","write":"verb",
+  "provide":"verb","work":"verb","need":"verb","help":"verb","build":"verb","learn":"verb",
+  "improve":"verb","schedule":"verb","finish":"verb","complete":"verb","start":"verb",
+  // Nouns
+  "day":"noun","time":"noun","year":"noun","people":"noun","way":"noun","man":"noun","woman":"noun",
+  "child":"noun","world":"noun","life":"noun","hand":"noun","part":"noun","place":"noun","case":"noun",
+  "week":"noun","company":"noun","system":"noun","program":"noun","question":"noun","work":"noun",
+  "government":"noun","number":"noun","night":"noun","point":"noun","home":"noun","water":"noun",
+  "room":"noun","mother":"noun","area":"noun","money":"noun","story":"noun","fact":"noun",
+  "month":"noun","lot":"noun","right":"noun","study":"noun","book":"noun","eye":"noun","job":"noun",
+  "word":"noun","business":"noun","issue":"noun","side":"noun","kind":"noun","head":"noun","house":"noun",
+  "service":"noun","friend":"noun","father":"noun","power":"noun","hour":"noun","game":"noun",
+  "line":"noun","end":"noun","team":"noun","city":"noun","community":"noun","name":"noun",
+  "president":"noun","car":"noun","body":"noun","parent":"noun","face":"noun","others":"noun",
+  "level":"noun","office":"noun","door":"noun","health":"noun","person":"noun","art":"noun",
+  "war":"noun","history":"noun","party":"noun","result":"noun","change":"noun","morning":"noun",
+  "reason":"noun","research":"noun","meeting":"noun","report":"noun","data":"noun","code":"noun",
+  "app":"noun","project":"noun","idea":"noun","plan":"noun","goal":"noun","skill":"noun",
+  // Adjectives
+  "good":"adj","new":"adj","first":"adj","last":"adj","long":"adj","great":"adj","little":"adj",
+  "own":"adj","right":"adj","big":"adj","high":"adj","different":"adj","small":"adj","large":"adj",
+  "next":"adj","early":"adj","young":"adj","important":"adj","few":"adj","public":"adj","bad":"adj",
+  "same":"adj","able":"adj","old":"adj","real":"adj","best":"adj","free":"adj","sure":"adj",
+  "hard":"adj","easy":"adj","clear":"adj","simple":"adj","full":"adj","open":"adj","deep":"adj",
+  "fast":"adj","quick":"adj","slow":"adj","strong":"adj","beautiful":"adj","amazing":"adj",
+  "incredible":"adj","fantastic":"adj","wonderful":"adj","excellent":"adj","perfect":"adj",
+  // Adverbs
+  "very":"adv","also":"adv","just":"adv","not":"adv","even":"adv","back":"adv","still":"adv",
+  "really":"adv","always":"adv","often":"adv","never":"adv","here":"adv","there":"adv","well":"adv",
+  "now":"adv","then":"adv","so":"adv","only":"adv","most":"adv","much":"adv","more":"adv",
+  "again":"adv","however":"adv","soon":"adv","today":"adv","already":"adv","perhaps":"adv",
+  "usually":"adv","actually":"adv","certainly":"adv","probably":"adv","quickly":"adv",
+  // Prepositions
+  "in":"prep","to":"prep","of":"prep","for":"prep","on":"prep","with":"prep","at":"prep",
+  "from":"prep","by":"prep","about":"prep","into":"prep","through":"prep","during":"prep",
+  "before":"prep","after":"prep","between":"prep","under":"prep","against":"prep","without":"prep",
+  "within":"prep","along":"prep","above":"prep","behind":"prep","beyond":"prep","across":"prep",
+  // Determiners
+  "the":"det","a":"det","an":"det","this":"det","that":"det","these":"det","those":"det",
+  "my":"det","your":"det","his":"det","her":"det","its":"det","our":"det","their":"det",
+  // Pronouns
+  "i":"pron","you":"pron","he":"pron","she":"pron","it":"pron","we":"pron","they":"pron",
+  "me":"pron","him":"pron","us":"pron","them":"pron","myself":"pron","yourself":"pron",
+  "what":"pron","which":"pron","who":"pron","whom":"pron","whose":"pron",
+  // Conjunctions
+  "and":"conj","but":"conj","or":"conj","because":"conj","if":"conj","when":"conj","while":"conj",
+  "although":"conj","unless":"conj","since":"conj","until":"conj","whether":"conj","as":"conj",
+  "that":"conj","though":"conj","so":"conj","yet":"conj","nor":"conj",
+};
+
+// ============================================================
+// ═══ VOCABULARY LIST ═══
+// ============================================================
+const VOCAB_LIST = [
+  {word:"Achieve",type:"verb",meaning:"Mencapai / Meraih",exEn:"She worked hard to achieve her goals.",exId:"Dia bekerja keras untuk mencapai tujuannya.",cat:"common"},
+  {word:"Analyze",type:"verb",meaning:"Menganalisis",exEn:"We need to analyze the data carefully.",exId:"Kita perlu menganalisis data dengan cermat.",cat:"academic"},
+  {word:"Benefit",type:"noun",meaning:"Manfaat / Keuntungan",exEn:"Exercise has many health benefits.",exId:"Olahraga memiliki banyak manfaat kesehatan.",cat:"common"},
+  {word:"Collaborate",type:"verb",meaning:"Berkolaborasi / Bekerja sama",exEn:"The teams collaborate on big projects.",exId:"Tim-tim berkolaborasi dalam proyek besar.",cat:"business"},
+  {word:"Determine",type:"verb",meaning:"Menentukan / Memutuskan",exEn:"You must determine your priorities.",exId:"Kamu harus menentukan prioritasmu.",cat:"common"},
+  {word:"Efficient",type:"adjective",meaning:"Efisien / Berdaya guna",exEn:"This approach is very efficient.",exId:"Pendekatan ini sangat efisien.",cat:"business"},
+  {word:"Fundamental",type:"adjective",meaning:"Fundamental / Mendasar",exEn:"Reading is a fundamental skill.",exId:"Membaca adalah keterampilan mendasar.",cat:"academic"},
+  {word:"Generate",type:"verb",meaning:"Menghasilkan / Membangkitkan",exEn:"Solar panels generate clean energy.",exId:"Panel surya menghasilkan energi bersih.",cat:"tech"},
+  {word:"Implement",type:"verb",meaning:"Menerapkan / Mengimplementasikan",exEn:"We will implement the new strategy.",exId:"Kami akan menerapkan strategi baru.",cat:"business"},
+  {word:"Justify",type:"verb",meaning:"Membenarkan / Menjustifikasi",exEn:"Can you justify this decision?",exId:"Bisakah kamu membenarkan keputusan ini?",cat:"academic"},
+  {word:"Knowledge",type:"noun",meaning:"Pengetahuan",exEn:"Knowledge is the key to success.",exId:"Pengetahuan adalah kunci kesuksesan.",cat:"common"},
+  {word:"Leverage",type:"verb",meaning:"Memanfaatkan / Menggunakan",exEn:"We can leverage our strengths.",exId:"Kita bisa memanfaatkan kekuatan kita.",cat:"business"},
+  {word:"Motivate",type:"verb",meaning:"Memotivasi",exEn:"Good leaders motivate their teams.",exId:"Pemimpin yang baik memotivasi tim mereka.",cat:"common"},
+  {word:"Negotiate",type:"verb",meaning:"Bernegosiasi",exEn:"They will negotiate the contract terms.",exId:"Mereka akan bernegosiasi syarat kontrak.",cat:"business"},
+  {word:"Optimize",type:"verb",meaning:"Mengoptimalkan",exEn:"We need to optimize this algorithm.",exId:"Kita perlu mengoptimalkan algoritma ini.",cat:"tech"},
+  {word:"Persist",type:"verb",meaning:"Bertahan / Tetap berusaha",exEn:"You must persist despite obstacles.",exId:"Kamu harus bertahan meski ada rintangan.",cat:"common"},
+  {word:"Resilient",type:"adjective",meaning:"Tangguh / Tahan banting",exEn:"A resilient person never gives up.",exId:"Orang yang tangguh tidak pernah menyerah.",cat:"common"},
+  {word:"Strategy",type:"noun",meaning:"Strategi",exEn:"We need a clear business strategy.",exId:"Kita butuh strategi bisnis yang jelas.",cat:"business"},
+  {word:"Algorithm",type:"noun",meaning:"Algoritma",exEn:"This sorting algorithm runs in O(n log n).",exId:"Algoritma pengurutan ini berjalan di O(n log n).",cat:"tech"},
+  {word:"Deploy",type:"verb",meaning:"Meluncurkan / Men-deploy",exEn:"We will deploy the app to production tonight.",exId:"Kita akan men-deploy aplikasi ke produksi malam ini.",cat:"tech"},
+  {word:"Framework",type:"noun",meaning:"Kerangka kerja",exEn:"React is a popular JavaScript framework.",exId:"React adalah framework JavaScript yang populer.",cat:"tech"},
+  {word:"Iterate",type:"verb",meaning:"Melakukan iterasi / Mengulang",exEn:"We iterate on the design based on feedback.",exId:"Kami melakukan iterasi pada desain berdasarkan umpan balik.",cat:"tech"},
+  {word:"Abstract",type:"adjective",meaning:"Abstrak / Tidak konkret",exEn:"Object-oriented programming uses abstract classes.",exId:"Pemrograman berorientasi objek menggunakan kelas abstrak.",cat:"tech"},
+  {word:"Concise",type:"adjective",meaning:"Ringkas / Padat",exEn:"Please keep your report concise.",exId:"Tolong buat laporanmu ringkas.",cat:"academic"},
+  {word:"Elaborate",type:"verb",meaning:"Menjelaskan secara rinci",exEn:"Could you elaborate on your idea?",exId:"Bisakah kamu menjelaskan idemu lebih rinci?",cat:"academic"},
+];
+
+// ============================================================
+// ═══ CODE CHALLENGES — 9 languages ═══
+// ============================================================
+const CODE_CHALLENGES = {
+  html:[
+    {title:"Button Component",desc:"Buat HTML button yang stylish.",diff:"easy",filename:"index.html",
+     code:`<button class="btn-primary">\n  Click Me!\n</button>`,
+     explain:[
+       {token:"<button>","desc":"Tag HTML untuk membuat tombol klik"},
+       {token:'class="btn-primary"',desc:"Atribut class untuk styling dengan CSS"},
+       {token:"Click Me!",desc:"Teks yang tampil di dalam tombol"},
+       {token:"</button>",desc:"Tag penutup elemen button"},
+     ]
+    },
+    {title:"Navigation Bar",desc:"Buat navbar sederhana dengan link.",diff:"medium",filename:"nav.html",
+     code:`<nav class="navbar">\n  <a href="/">Home</a>\n  <a href="/about">About</a>\n  <a href="/contact">Contact</a>\n</nav>`,
+     explain:[
+       {token:"<nav>",desc:"Elemen semantik HTML5 untuk navigasi"},
+       {token:"<a href>",desc:"Tag anchor/link — href menentukan tujuan link"},
+       {token:"/",desc:"Jalur URL: / = halaman beranda (root)"},
+     ]
+    },
+    {title:"Card Component",desc:"Buat product card layout.",diff:"medium",filename:"card.html",
+     code:`<div class="card">\n  <img src="product.jpg" alt="Product">\n  <h3>Product Name</h3>\n  <p>$29.99</p>\n  <button>Add to Cart</button>\n</div>`,
+     explain:[
+       {token:"<div class='card'>",desc:"Container div dengan class card untuk styling"},
+       {token:"<img src alt>",desc:"Elemen gambar — src adalah path, alt adalah deskripsi aksesibilitas"},
+       {token:"<h3>",desc:"Heading level 3 — untuk judul sub-konten"},
+     ]
+    },
+    {title:"Form Layout",desc:"Buat form input dengan label.",diff:"hard",filename:"form.html",
+     code:`<form>\n  <label for="email">Email</label>\n  <input type="email" id="email" placeholder="you@example.com">\n  <label for="pass">Password</label>\n  <input type="password" id="pass">\n  <button type="submit">Login</button>\n</form>`,
+     explain:[
+       {token:"<form>",desc:"Container untuk elemen input — mengelompokkan data yang dikirim"},
+       {token:"<label for>",desc:"Label yang terhubung ke input via atribut for/id"},
+       {token:'type="email"',desc:"Validasi otomatis format email oleh browser"},
+     ]
+    },
+  ],
+  css:[
+    {title:"Flexbox Layout",desc:"Style flex container terpusat.",diff:"easy",filename:"style.css",
+     code:`.container {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  gap: 16px;\n}`,
+     explain:[
+       {token:"display: flex",desc:"Mengaktifkan Flexbox layout model"},
+       {token:"justify-content: center",desc:"Memusatkan item secara horizontal (main axis)"},
+       {token:"align-items: center",desc:"Memusatkan item secara vertikal (cross axis)"},
+       {token:"gap: 16px",desc:"Jarak antar flex item"},
+     ]
+    },
+    {title:"Button Styles",desc:"Button dengan hover animation.",diff:"medium",filename:"buttons.css",
+     code:`.btn {\n  padding: 10px 20px;\n  border-radius: 8px;\n  border: none;\n  cursor: pointer;\n  transition: all 0.3s ease;\n}\n.btn:hover {\n  transform: translateY(-2px);\n}`,
+     explain:[
+       {token:"border-radius",desc:"Membulatkan sudut elemen"},
+       {token:"transition: all 0.3s ease",desc:"Animasi smooth saat properti berubah — 0.3s = durasi"},
+       {token:"transform: translateY(-2px)",desc:"Menggeser elemen ke atas 2px saat hover"},
+     ]
+    },
+    {title:"CSS Grid",desc:"Grid layout responsif.",diff:"hard",filename:"grid.css",
+     code:`.grid {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 20px;\n}\n@media (max-width: 768px) {\n  .grid {\n    grid-template-columns: 1fr;\n  }\n}`,
+     explain:[
+       {token:"display: grid",desc:"Mengaktifkan CSS Grid layout"},
+       {token:"repeat(3, 1fr)",desc:"3 kolom dengan lebar sama — 1fr = 1 fraction unit"},
+       {token:"@media (max-width: 768px)",desc:"Responsive breakpoint — berlaku di layar ≤ 768px"},
+     ]
+    },
+  ],
+  js:[
+    {title:"Hello World",desc:"Fungsi JavaScript pertamamu.",diff:"easy",filename:"main.js",
+     code:`function greet(name) {\n  return \`Hello, \${name}!\`;\n}\n\nconsole.log(greet("World"));`,
+     explain:[
+       {token:"function greet(name)",desc:"Deklarasi fungsi bernama greet dengan parameter name"},
+       {token:"return",desc:"Mengembalikan nilai dari fungsi"},
+       {token:"\\`Hello, \\${name}!\\`",desc:"Template literal — ${} untuk interpolasi variabel"},
+       {token:"console.log()",desc:"Mencetak output ke browser console"},
+     ]
+    },
+    {title:"Array Methods",desc:"Gunakan map dan filter.",diff:"medium",filename:"arrays.js",
+     code:`const numbers = [1, 2, 3, 4, 5];\n\nconst doubled = numbers.map(n => n * 2);\nconst evens = numbers.filter(n => n % 2 === 0);\n\nconsole.log(doubled);\nconsole.log(evens);`,
+     explain:[
+       {token:"const",desc:"Deklarasi variabel yang tidak bisa di-reassign"},
+       {token:".map(n => n * 2)",desc:"Membuat array baru dengan setiap elemen dikalikan 2"},
+       {token:".filter(n => n % 2 === 0)",desc:"Menyaring elemen — hanya simpan yang habis dibagi 2"},
+       {token:"% (modulo)",desc:"Operator sisa bagi — 4 % 2 = 0, 5 % 2 = 1"},
+     ]
+    },
+    {title:"Async/Await",desc:"Fetch data dari API.",diff:"hard",filename:"fetch.js",
+     code:`async function fetchUser(id) {\n  try {\n    const res = await fetch(\`/api/users/\${id}\`);\n    const data = await res.json();\n    return data;\n  } catch (err) {\n    console.error("Error:", err);\n  }\n}`,
+     explain:[
+       {token:"async function",desc:"Fungsi asynchronous — bisa menggunakan await"},
+       {token:"await fetch()",desc:"Menunggu respons HTTP — tidak memblokir UI"},
+       {token:"await res.json()",desc:"Parse body respons sebagai JSON"},
+       {token:"try/catch",desc:"Error handling — catch menangkap exception"},
+     ]
+    },
+    {title:"Classes (OOP)",desc:"Object-Oriented JavaScript.",diff:"expert",filename:"class.js",
+     code:`class Animal {\n  constructor(name) {\n    this.name = name;\n  }\n  speak() {\n    return \`\${this.name} makes a sound.\`;\n  }\n}\n\nclass Dog extends Animal {\n  speak() {\n    return \`\${this.name} barks.\`;\n  }\n}`,
+     explain:[
+       {token:"class",desc:"Blueprint untuk membuat objek — konsep OOP"},
+       {token:"constructor",desc:"Method khusus yang dipanggil saat objek dibuat (new)"},
+       {token:"this.name",desc:"Property instance — this = objek yang sedang aktif"},
+       {token:"extends",desc:"Inheritance — Dog mewarisi semua method Animal"},
+     ]
+    },
+  ],
+  py:[
+    {title:"Hello Python",desc:"Fungsi Python pertamamu.",diff:"easy",filename:"main.py",
+     code:`def greet(name):\n    return f"Hello, {name}!"\n\nprint(greet("World"))`,
+     explain:[
+       {token:"def greet(name):",desc:"Deklarasi fungsi — def singkatan dari define"},
+       {token:"return",desc:"Mengembalikan nilai dari fungsi"},
+       {token:'f"Hello, {name}!"',desc:"f-string — {} untuk interpolasi variabel langsung"},
+       {token:"print()",desc:"Mencetak output ke console/terminal"},
+     ]
+    },
+    {title:"List Comprehension",desc:"Python list comprehension.",diff:"medium",filename:"lists.py",
+     code:`numbers = [1, 2, 3, 4, 5]\n\ndoubled = [n * 2 for n in numbers]\nevens = [n for n in numbers if n % 2 == 0]\n\nprint(doubled)\nprint(evens)`,
+     explain:[
+       {token:"[n * 2 for n in numbers]",desc:"List comprehension — cara ringkas membuat list baru"},
+       {token:"for n in numbers",desc:"Iterasi — n mengambil setiap nilai dari list numbers"},
+       {token:"if n % 2 == 0",desc:"Kondisi filter — hanya masukkan bilangan genap"},
+     ]
+    },
+    {title:"OOP Python",desc:"Class dan inheritance.",diff:"hard",filename:"oop.py",
+     code:`class Animal:\n    def __init__(self, name):\n        self.name = name\n\n    def speak(self):\n        return f"{self.name} makes a sound"\n\nclass Dog(Animal):\n    def speak(self):\n        return f"{self.name} barks!"`,
+     explain:[
+       {token:"class Animal:",desc:"Mendefinisikan class — blueprint untuk objek"},
+       {token:"def __init__(self, name):",desc:"Constructor — dipanggil otomatis saat objek dibuat"},
+       {token:"self",desc:"Referensi ke instance objek yang sedang aktif"},
+       {token:"class Dog(Animal):",desc:"Inheritance — Dog mewarisi semua dari Animal"},
+     ]
+    },
+  ],
+  java:[
+    {title:"Hello Java",desc:"Program Java pertamamu.",diff:"easy",filename:"Main.java",
+     code:`public class Main {\n  public static void main(String[] args) {\n    System.out.println("Hello, World!");\n  }\n}`,
+     explain:[
+       {token:"public class Main",desc:"Deklarasi class — nama file harus sama dengan class"},
+       {token:"public static void main",desc:"Entry point program Java — titik awal eksekusi"},
+       {token:"String[] args",desc:"Array argument dari command line"},
+       {token:"System.out.println()",desc:"Mencetak teks ke console dengan newline"},
+     ]
+    },
+    {title:"For Loop",desc:"Looping di Java.",diff:"easy",filename:"Loop.java",
+     code:`for (int i = 0; i < 5; i++) {\n  System.out.println("Count: " + i);\n}`,
+     explain:[
+       {token:"int i = 0",desc:"Inisialisasi — variabel counter bertipe integer dimulai dari 0"},
+       {token:"i < 5",desc:"Kondisi — loop berlanjut selama i kurang dari 5"},
+       {token:"i++",desc:"Increment — tambahkan 1 ke i setiap iterasi"},
+     ]
+    },
+  ],
+  ts:[
+    {title:"TypeScript Basics",desc:"Type annotations di TypeScript.",diff:"easy",filename:"index.ts",
+     code:`function greet(name: string): string {\n  return \`Hello, \${name}!\`;\n}\n\nconst user: string = "World";\nconsole.log(greet(user));`,
+     explain:[
+       {token:"name: string",desc:"Type annotation — parameter name harus bertipe string"},
+       {token:": string (return)",desc:"Return type annotation — fungsi harus mengembalikan string"},
+       {token:"const user: string",desc:"Tipe variabel eksplisit — mencegah bug tipe data"},
+     ]
+    },
+    {title:"Interface",desc:"Interface di TypeScript.",diff:"medium",filename:"types.ts",
+     code:`interface User {\n  id: number;\n  name: string;\n  email: string;\n  age?: number;\n}\n\nfunction printUser(user: User): void {\n  console.log(user.name);\n}`,
+     explain:[
+       {token:"interface User",desc:"Mendefinisikan bentuk/struktur sebuah object"},
+       {token:"id: number",desc:"Property wajib bertipe number"},
+       {token:"age?: number",desc:"? = optional property — boleh ada boleh tidak"},
+       {token:"void",desc:"Return type — fungsi tidak mengembalikan nilai"},
+     ]
+    },
+  ],
+  cpp:[
+    {title:"Hello C++",desc:"Program C++ pertamamu.",diff:"easy",filename:"main.cpp",
+     code:`#include <iostream>\nusing namespace std;\n\nint main() {\n  cout << "Hello, World!" << endl;\n  return 0;\n}`,
+     explain:[
+       {token:"#include <iostream>",desc:"Menyertakan library standard I/O untuk cout/cin"},
+       {token:"using namespace std",desc:"Menggunakan namespace std agar tidak perlu prefix std::"},
+       {token:"cout <<",desc:"Output stream — mengirim teks ke console"},
+       {token:"return 0",desc:"Kode keluar 0 = sukses"},
+     ]
+    },
+  ],
+  php:[
+    {title:"PHP Hello",desc:"PHP script dasar.",diff:"easy",filename:"index.php",
+     code:`<?php\nfunction greet($name) {\n  return "Hello, " . $name . "!";\n}\n\necho greet("World");\n?>`,
+     explain:[
+       {token:"<?php",desc:"Tag pembuka PHP — kode PHP dimulai di sini"},
+       {token:"$name",desc:"Variabel PHP — selalu dimulai dengan tanda $"},
+       {token:". (dot)",desc:"Operator concatenation PHP — menggabungkan string"},
+       {token:"echo",desc:"Mencetak output ke halaman/console"},
+     ]
+    },
+  ],
+  sql:[
+    {title:"Basic SELECT",desc:"Query SELECT SQL.",diff:"easy",filename:"query.sql",
+     code:`SELECT id, name, email\nFROM users\nWHERE active = 1\nORDER BY name ASC\nLIMIT 10;`,
+     explain:[
+       {token:"SELECT",desc:"Menentukan kolom yang ingin diambil"},
+       {token:"FROM users",desc:"Tabel sumber data"},
+       {token:"WHERE active = 1",desc:"Filter kondisi — hanya ambil user yang aktif"},
+       {token:"ORDER BY name ASC",desc:"Urutkan berdasarkan nama, ascending (A-Z)"},
+       {token:"LIMIT 10",desc:"Batasi hasil hanya 10 baris"},
+     ]
+    },
+    {title:"JOIN Tables",desc:"Menggabungkan dua tabel.",diff:"medium",filename:"join.sql",
+     code:`SELECT u.name, o.total\nFROM users u\nINNER JOIN orders o\nON u.id = o.user_id\nWHERE o.total > 100;`,
+     explain:[
+       {token:"u.name, o.total",desc:"Mengambil kolom dari dua tabel berbeda"},
+       {token:"INNER JOIN",desc:"Menggabungkan baris yang cocok di kedua tabel"},
+       {token:"ON u.id = o.user_id",desc:"Kondisi penghubung antar tabel"},
+     ]
+    },
+  ],
+};
+
+// ============================================================
+// ═══ LEADERBOARD ═══
+// ============================================================
+const LEADERBOARD_DATA = [
+  {name:"SpeedKing99",flag:"🇺🇸",wpm:187,acc:"99.1%",tests:1240,xp:98400},
+  {name:"KeyboardNinja",flag:"🇯🇵",wpm:175,acc:"98.7%",tests:980,xp:87200},
+  {name:"TypeMaster",flag:"🇩🇪",wpm:168,acc:"97.9%",tests:850,xp:76500},
+  {name:"FlashFingers",flag:"🇬🇧",wpm:162,acc:"98.2%",tests:760,xp:68900},
+  {name:"SwiftTyper",flag:"🇰🇷",wpm:158,acc:"96.8%",tests:690,xp:61200},
+  {name:"RapidKeys",flag:"🇧🇷",wpm:151,acc:"97.5%",tests:620,xp:55800},
+  {name:"NinjaFingers",flag:"🇨🇦",wpm:145,acc:"95.9%",tests:580,xp:49600},
+  {name:"TypingPro",flag:"🇦🇺",wpm:139,acc:"96.4%",tests:510,xp:44100},
+  {name:"FastHands",flag:"🇫🇷",wpm:133,acc:"95.1%",tests:470,xp:38700},
+  {name:"KeyStroke",flag:"🇮🇩",wpm:128,acc:"94.8%",tests:440,xp:33200},
+];
+
+// ============================================================
+// ═══ ACHIEVEMENTS ═══
+// ============================================================
+const ACHIEVEMENTS = [
+  {id:"first_test",icon:"🎯",name:"First Test",desc:"Complete your first typing test",req:1,type:"tests"},
+  {id:"speed_30",icon:"⚡",name:"Lightning",desc:"Reach 30 WPM",req:30,type:"wpm"},
+  {id:"speed_50",icon:"🚀",name:"Rocket",desc:"Reach 50 WPM",req:50,type:"wpm"},
+  {id:"speed_80",icon:"🔥",name:"On Fire",desc:"Reach 80 WPM",req:80,type:"wpm"},
+  {id:"speed_100",icon:"💎",name:"Diamond Typist",desc:"Reach 100 WPM",req:100,type:"wpm"},
+  {id:"tests_10",icon:"📝",name:"Dedicated",desc:"Complete 10 tests",req:10,type:"tests"},
+  {id:"tests_50",icon:"🏋️",name:"Grinder",desc:"Complete 50 tests",req:50,type:"tests"},
+  {id:"accuracy_95",icon:"🎖️",name:"Precision",desc:"Get 95%+ accuracy",req:95,type:"acc"},
+  {id:"streak_3",icon:"🔥",name:"Hot Streak",desc:"3 day streak",req:3,type:"streak"},
+  {id:"streak_7",icon:"🌟",name:"Week Warrior",desc:"7 day streak",req:7,type:"streak"},
+  {id:"vocab_10",icon:"📚",name:"Word Learner",desc:"Learn 10 vocab words",req:10,type:"vocab"},
+  {id:"code_5",icon:"💻",name:"Code Typist",desc:"Complete 5 code challenges",req:5,type:"code"},
+  {id:"vocab_50",icon:"🧠",name:"Vocabulary Pro",desc:"Learn 50 vocab words",req:50,type:"vocab"},
+  {id:"code_20",icon:"👨‍💻",name:"Code Master",desc:"Complete 20 challenges",req:20,type:"code"},
+];
+
+// ============================================================
+// ═══ KEYBOARD ROWS ═══
+// ============================================================
+const KB_ROWS = [
+  ['`','1','2','3','4','5','6','7','8','9','0','-','='],
+  ['q','w','e','r','t','y','u','i','o','p','[',']','\\'],
+  ['a','s','d','f','g','h','j','k','l',';',"'"],
+  ['z','x','c','v','b','n','m',',','.','/']
+];
+
+// ============================================================
+// ═══ STATE ═══
+// ============================================================
+let userData = JSON.parse(localStorage.getItem('typecraft_user') || 'null') || {
+  username:"Typer",xp:0,level:1,streak:0,lastDay:null,
+  bestWpm:0,totalTests:0,totalTime:0,
+  wpmHistory:[],accuracyHistory:[],keyErrors:{},
+  vocabLearned:0,codeCompleted:0,
+  unlockedAchievements:[],
+  weakKeys:[],weakTopics:[],
+  vocabMastery:{},     // word -> {seen, correct}
+  codeMastery:{},      // lang -> completed count
+  englishCat:'all',
+};
+// ── SANITIZE DATA LAMA ──────────────────────────────────────────
+// Penyebab error: vocabMastery di localStorage menyimpan format lama
+// yang berisi object tidak valid (tidak punya property 'correct').
+// Sort di filterVocabList mencoba akses .correct → crash.
+if (userData.vocabMastery && typeof userData.vocabMastery === 'object') {
+  Object.keys(userData.vocabMastery).forEach(k => {
+    const m = userData.vocabMastery[k];
+    if (!m || typeof m !== 'object' || typeof m.correct === 'undefined') {
+      userData.vocabMastery[k] = { seen: 0, correct: 0 };
+    }
+  });
+}
+// Pastikan fields wajib lain ada (untuk user lama yang datanya incomplete)
+if (!userData.vocabMastery)       userData.vocabMastery = {};
+if (!userData.codeMastery)        userData.codeMastery = {};
+if (!userData.keyErrors)          userData.keyErrors = {};
+if (!userData.wpmHistory)         userData.wpmHistory = [];
+if (!userData.unlockedAchievements) userData.unlockedAchievements = [];
+
+let settings = JSON.parse(localStorage.getItem('typecraft_settings') || 'null') || {
+  sound:false,keyboard:true,blind:false,trans:true,srs:true,autonext:true,
+  fontSize:22,grammar:true,dyslexia:false,tts:false
+};
+
+let typingState = {
+  active:false,text:'',chars:[],pos:0,errors:0,
+  startTime:null,timer:null,timeLimit:30,mode:'english',
+  level:0,levelNames:['🟢 Beginner','🟡 Intermediate','🔴 Advanced'],
+  currentSentence:null,englishCat:'all',
+};
+
+let vocabState = {cat:'all',idx:0,combo:1,score:0,learned:0,list:[],pos:0,sessionMastery:0};
+let codeState = {lang:'html',challengeIdx:0,typed:'',startTime:null,errors:0,showExplain:false};
+let raceState = {active:false,type:'bots',text:'',pos:0,bots:[],interval:null,startTime:null};
+let focusState = {active:false,text:'',chars:[],timer:null,active2:false,startTime:null};
+
+// ============================================================
+// ═══ INIT ═══
+// ============================================================
+window.onload = () => {
+  try {
+    initBgCanvas();
+    buildKeyboard('keyboard-viz');
+    buildKeyboard('stats-keyboard');
+    applySettings();
+    updateTopbar();
+    updateDashboard();
+    populateLeaderboard();
+    renderAchievements('achievements-grid');
+    renderAchievements('profile-achievements');
+    loadVocabCard();
+    loadCodeChallenge();
+    initRacers();
+    checkStreaks();
+    updateProfilePage();
+    setupFocusModeKeyboard();
+    generateTutorTip();
+    updateDailyChallenge();
+    document.getElementById('settings-username').value = userData.username;
+  } catch(e) {
+    console.error('Init error:', e);
+  }
+};
+
+// ============================================================
+// ═══ NAVIGATION ═══
+// ============================================================
+const PAGE_TITLES = {
+  dashboard:'Dashboard',typing:'Typing Test',vocab:'Vocabulary',coding:'Code Typing',
+  race:'Race Mode',leaderboard:'Leaderboard',stats:'Statistics',profile:'Profile',settings:'Settings',
+  pytrainer:'Python Trainer',entrainer:'English Trainer'
+};
+function navigate(page) {
+  try {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const target = document.getElementById('page-' + page);
+    if(target) target.classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => {
+      if(n.getAttribute('onclick') && n.getAttribute('onclick').includes("'"+page+"'")) n.classList.add('active');
+    });
+    document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
+    if(page==='typing'){resetTest();}
+    if(page==='stats'){updateStatsPage();}
+    if(page==='profile'){updateProfilePage();}
+    if(page==='vocab'){filterVocabList();loadVocabCard();}
+    if(page==='leaderboard'){populateLeaderboard();}
+    if(page==='dashboard'){updateDashboard();generateTutorTip();}
+    if(page==='coding'){loadCodeChallenge();}
+    if(page==='race'){initRacers();}
+    if(page==='entrainer'){setTimeout(()=>{ if(typeof enInitTrainer==='function') enInitTrainer(); },100);}
+  } catch(e) { console.error('Navigate error:', e); }
+}
+
+// ============================================================
+// ═══ BACKGROUND CANVAS ═══
+// ============================================================
+function initBgCanvas() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
+  resize();
+  window.addEventListener('resize',resize);
+  for(let i=0;i<70;i++) particles.push({
+    x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+    vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25,
+    size:Math.random()*1.8+0.4,opacity:Math.random()*0.4+0.1
+  });
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    particles.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<0)p.x=canvas.width;if(p.x>canvas.width)p.x=0;
+      if(p.y<0)p.y=canvas.height;if(p.y>canvas.height)p.y=0;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle=`rgba(124,106,247,${p.opacity})`;ctx.fill();
+    });
+    // subtle connections
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const d=Math.hypot(particles[i].x-particles[j].x,particles[i].y-particles[j].y);
+        if(d<90){
+          ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);
+          ctx.strokeStyle=`rgba(124,106,247,${0.05*(1-d/90)})`;ctx.lineWidth=0.5;ctx.stroke();
+        }
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ============================================================
+// ═══ KEYBOARD ═══
+// ============================================================
+function buildKeyboard(containerId) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '';
+  KB_ROWS.forEach(row => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'kb-row';
+    row.forEach(k => {
+      const key = document.createElement('div');
+      key.className = 'key';
+      key.textContent = k;
+      key.id = containerId + '-key-' + k;
+      // error count badge
+      const badge = document.createElement('div');
+      badge.className = 'key-err-count';
+      badge.id = containerId + '-err-' + k;
+      key.appendChild(badge);
+      key.title = k.toUpperCase();
+      rowEl.appendChild(key);
+    });
+    container.appendChild(rowEl);
+  });
+  const spaceRow = document.createElement('div');
+  spaceRow.className = 'kb-row';
+  const space = document.createElement('div');
+  space.className = 'key space';
+  space.textContent = 'space';
+  space.id = containerId + '-key-space';
+  spaceRow.appendChild(space);
+  container.appendChild(spaceRow);
+}
+function flashKey(k) {
+  const id = 'keyboard-viz-key-' + (k === ' ' ? 'space' : k.toLowerCase());
+  const key = document.getElementById(id);
+  if(!key) return;
+  key.classList.add('pressed');
+  setTimeout(() => key.classList.remove('pressed'), 80);
+}
+function updateHeatmap(containerId) {
+  const errs = userData.keyErrors;
+  const vals = Object.values(errs);
+  const maxErr = vals.length ? Math.max(...vals) : 1;
+  KB_ROWS.forEach(row => row.forEach(k => {
+    const key = document.getElementById(containerId + '-key-' + k);
+    if(!key) return;
+    const e = errs[k] || 0;
+    const badge = document.getElementById(containerId + '-err-' + k);
+    key.classList.remove('hot','warm','cool');
+    if(e > 0 && badge) { badge.textContent = e; }
+    const ratio = e / maxErr;
+    if(ratio > 0.5) key.classList.add('hot');
+    else if(ratio > 0.2) key.classList.add('warm');
+    else if(e === 0 && userData.totalTests > 0) key.classList.add('cool');
+    if(key.title === k.toUpperCase()) key.title = `${k.toUpperCase()}: ${e} errors`;
+  }));
+}
+
+// ============================================================
+// ═══ TYPING TEST ENGINE (preserved + enhanced) ═══
+// ============================================================
+function loadTypingText() {
+  const mode = typingState.mode;
+  let arr = SENTENCES[mode] || SENTENCES.english;
+  // category filter for english
+  if(mode === 'english' && typingState.englishCat !== 'all') {
+    const filtered = arr.filter(s => s.cat === typingState.englishCat);
+    if(filtered.length) arr = filtered;
+  }
+  const sentence = arr[Math.floor(Math.random() * arr.length)];
+  typingState.text = mode === 'words' ? sentence.en : sentence.en;
+  typingState.currentSentence = sentence;
+
+  if(settings.trans && mode === 'english') {
+    document.getElementById('translation-bar').style.display = 'flex';
+    document.getElementById('translation-text').textContent = sentence.id;
+    if(settings.tts) speakText();
+  } else {
+    document.getElementById('translation-bar').style.display = 'none';
+  }
+  if(settings.grammar && mode === 'english') {
+    renderGrammarPanel(typingState.text);
+  } else {
+    document.getElementById('grammar-panel').style.display = 'none';
+  }
+  renderTypingText();
+}
+
+function renderGrammarPanel(text) {
+  const panel = document.getElementById('grammar-panel');
+  const tagsEl = document.getElementById('grammar-tags');
+  const words = text.toLowerCase().replace(/[^a-z\s]/g,'').split(/\s+/).filter(Boolean);
+  const unique = [...new Set(words)];
+  const found = unique.map(w => ({word:w, pos:GRAMMAR_MAP[w]})).filter(x => x.pos);
+  if(!found.length) { panel.style.display='none'; return; }
+  panel.style.display = 'flex';
+  tagsEl.innerHTML = '';
+  const posClassMap = {
+    noun:'gt-noun',verb:'gt-verb',adj:'gt-adj',adv:'gt-adv',
+    prep:'gt-prep',det:'gt-det',pron:'gt-pron',conj:'gt-conj'
+  };
+  const posLabelMap = {
+    noun:'NOUN',verb:'VERB',adj:'ADJ',adv:'ADV',
+    prep:'PREP',det:'DET',pron:'PRON',conj:'CONJ'
+  };
+  // Group by POS
+  const grouped = {};
+  found.slice(0,8).forEach(({word,pos}) => {
+    if(!grouped[pos]) grouped[pos] = [];
+    grouped[pos].push(word);
+  });
+  Object.entries(grouped).forEach(([pos,words]) => {
+    const tag = document.createElement('span');
+    tag.className = 'grammar-tag ' + (posClassMap[pos]||'gt-noun');
+    tag.textContent = `${posLabelMap[pos]||pos.toUpperCase()}: ${words.slice(0,3).join(', ')}`;
+    tagsEl.appendChild(tag);
+  });
+}
+
+function renderTypingText() {
+  const container = document.getElementById('typing-text-chars');
+  container.innerHTML = '';
+  typingState.chars = typingState.text.split('').map((ch, i) => {
+    const span = document.createElement('span');
+    span.className = 'char ' + (i===0 ? 'current' : 'pending');
+    span.textContent = ch;
+    container.appendChild(span);
+    return {el:span, ch};
+  });
+}
+
+function setTypingMode(mode, el) {
+  typingState.mode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  // toggle category selector visibility
+  const catWrap = document.getElementById('english-cat-wrap');
+  if(catWrap) catWrap.style.display = mode === 'english' ? 'flex' : 'none';
+  resetTest();
+}
+
+function setEnglishCat(cat, el) {
+  typingState.englishCat = cat;
+  userData.englishCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  resetTest();
+}
+
+function setTimeLimit(t, el) {
+  typingState.timeLimit = t;
+  document.querySelectorAll('.typing-config .config-btn').forEach(b => {
+    if(['30s','60s','120s'].includes(b.textContent)) b.classList.remove('active');
+  });
+  if(el) el.classList.add('active');
+  resetTest();
+}
+
+let levelIdx = 0;
+function cycleLevel(el) {
+  levelIdx = (levelIdx + 1) % typingState.levelNames.length;
+  if(el) el.textContent = typingState.levelNames[levelIdx];
+  resetTest();
+}
+
+function resetTest() {
+  clearInterval(typingState.timer);
+  typingState.active = false;
+  typingState.pos = 0;
+  typingState.errors = 0;
+  typingState.startTime = null;
+  document.getElementById('typing-input').value = '';
+  document.getElementById('timer-display').textContent = typingState.timeLimit;
+  document.getElementById('timer-bar').style.width = '100%';
+  document.getElementById('live-wpm').textContent = '0';
+  document.getElementById('live-acc').textContent = '100%';
+  document.getElementById('live-chars').textContent = '0';
+  document.getElementById('live-errors').textContent = '0';
+  document.getElementById('live-cpm').textContent = '0';
+  document.getElementById('result-screen').classList.remove('show');
+  document.getElementById('main-typing-area').style.display = 'block';
+  loadTypingText();
+}
+
+function handleTypingInput(e) {
+  const input = e.target;
+  const val = input.value;
+
+  if(!typingState.active && val.length > 0) {
+    typingState.active = true;
+    typingState.startTime = Date.now();
+    startTimer();
+  }
+
+  const typed = val;
+  const text = typingState.text;
+
+  typingState.chars.forEach((c, i) => {
+    c.el.className = 'char';
+    if(i < typed.length) {
+      if(typed[i] === c.ch) { c.el.className = 'char correct'; }
+      else { c.el.className = 'char wrong'; }
+    } else if(i === typed.length) {
+      c.el.className = 'char current';
+    } else {
+      c.el.className = 'char pending';
+    }
+  });
+
+  const correct = typed.split('').filter((ch, i) => ch === text[i]).length;
+  const errors = typed.length - correct;
+  typingState.errors = errors;
+
+  const elapsed = typingState.startTime ? (Date.now() - typingState.startTime) / 60000 : 0;
+  const wpm = elapsed > 0 ? Math.round((correct / 5) / elapsed) : 0;
+  const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
+  const cpm = elapsed > 0 ? Math.round(correct / elapsed) : 0;
+
+  document.getElementById('live-wpm').textContent = wpm;
+  document.getElementById('live-acc').textContent = acc + '%';
+  document.getElementById('live-chars').textContent = correct;
+  document.getElementById('live-errors').textContent = errors;
+  document.getElementById('live-cpm').textContent = cpm;
+
+  if(settings.sound) playKeySound(errors > 0);
+  if(val.length > 0) {
+    const lastChar = val[val.length - 1];
+    flashKey(lastChar);
+    if(errors > 0) {
+      const errKey = text[typed.length - 1];
+      if(errKey) userData.keyErrors[errKey] = (userData.keyErrors[errKey] || 0) + 1;
+    }
+  }
+  if(typed.length >= text.length) endTest(true);
+}
+
+function handleTypingKey(e) {
+  if(e.key === 'Tab') { e.preventDefault(); resetTest(); }
+}
+
+function startTimer() {
+  let remaining = typingState.timeLimit;
+  typingState.timer = setInterval(() => {
+    remaining--;
+    document.getElementById('timer-display').textContent = remaining;
+    document.getElementById('timer-bar').style.width = (remaining / typingState.timeLimit * 100) + '%';
+    if(remaining <= 0) endTest(false);
+  }, 1000);
+}
+
+function endTest(completed) {
+  clearInterval(typingState.timer);
+  typingState.active = false;
+  const input = document.getElementById('typing-input');
+  const typed = input.value;
+  const text = typingState.text;
+  const elapsed = typingState.startTime ? (Date.now() - typingState.startTime) / 60000 : 0.001;
+  const correct = typed.split('').filter((ch, i) => ch === text[i]).length;
+  const wpm = elapsed > 0 ? Math.round((correct / 5) / elapsed) : 0;
+  const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
+  const cpm = elapsed > 0 ? Math.round(correct / elapsed) : 0;
+  const xpEarned = Math.round(wpm * (acc / 100) * 2) + (completed ? 10 : 0);
+
+  if(wpm > userData.bestWpm) userData.bestWpm = wpm;
+  userData.totalTests++;
+  userData.totalTime += Math.round(elapsed);
+  userData.wpmHistory.push(wpm);
+  if(userData.wpmHistory.length > 30) userData.wpmHistory.shift();
+  userData.accuracyHistory.push(acc);
+  if(userData.accuracyHistory.length > 30) userData.accuracyHistory.shift();
+  detectWeakKeys();
+  addXP(xpEarned);
+  saveUser();
+  updateTopbar();
+  checkAchievements();
+
+  document.getElementById('main-typing-area').style.display = 'none';
+  document.getElementById('result-screen').classList.add('show');
+  document.getElementById('res-wpm').textContent = wpm;
+  document.getElementById('res-acc').textContent = acc + '%';
+  document.getElementById('res-chars').textContent = correct;
+  document.getElementById('res-errors').textContent = typingState.errors;
+  document.getElementById('res-cpm').textContent = cpm;
+  document.getElementById('res-xp').textContent = '+' + xpEarned;
+  updateHeatmap('keyboard-viz');
+  showXpPopup(xpEarned);
+  generateResultFeedback(wpm, acc);
+  updateDashboard();
+}
+
+function generateResultFeedback(wpm, acc) {
+  const el = document.getElementById('result-ai-feedback');
+  let msg = '';
+  if(wpm >= 100) msg = '🏆 Luar biasa! Kamu sudah mencapai 100 WPM. Kamu berada di top 5% typist dunia!';
+  else if(wpm >= 70) msg = `🚀 Keren! ${wpm} WPM adalah kecepatan yang solid. Fokus pada akurasi untuk meningkatkan lagi.`;
+  else if(wpm >= 50) msg = `⚡ Bagus! ${wpm} WPM. Coba tingkatkan ke 70 WPM dengan latihan konsisten setiap hari.`;
+  else if(wpm >= 30) msg = `📈 Progress bagus! ${wpm} WPM. Terus latihan — kecepatan akan meningkat secara alami.`;
+  else msg = `🌱 Awal yang baik! Fokus pada akurasi dulu, kecepatan akan datang sendiri dengan latihan.`;
+  if(acc < 90) msg += ` ⚠️ Akurasi ${acc}% perlu ditingkatkan — lebih baik lambat tapi akurat.`;
+  const weakKeys = Object.entries(userData.keyErrors).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k]) => k.toUpperCase());
+  if(weakKeys.length) msg += ` 💡 Fokus latihan key: ${weakKeys.join(', ')}.`;
+  if(el) el.innerHTML = '<span style="color:var(--accent)">🤖 AI Feedback:</span> ' + msg;
+}
+
+function detectWeakKeys() {
+  userData.weakKeys = Object.entries(userData.keyErrors)
+    .sort((a,b) => b[1]-a[1]).slice(0,5).map(([k]) => k);
+}
+
+// ============================================================
+// ═══ SPEAK / TTS ═══
+// ============================================================
+function speakText() {
+  try {
+    if(!window.speechSynthesis) return;
+    const text = typingState.currentSentence ? typingState.currentSentence.en : '';
+    if(!text) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'en-US'; utter.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  } catch(e) {}
+}
+function speakVocab() {
+  try {
+    const word = document.getElementById('vocab-word').textContent;
+    if(!word || !window.speechSynthesis) return;
+    const utter = new SpeechSynthesisUtterance(word);
+    utter.lang = 'en-US'; utter.rate = 0.85;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  } catch(e) {}
+}
+
+// ============================================================
+// ═══ VOCABULARY ═══
+// ============================================================
+function filterVocabList() {
+  try {
+    const cat = vocabState.cat;
+    const safeList = (VOCAB_LIST || []).filter(v => v != null && typeof v === 'object' && v.word);
+    if (cat === 'all') vocabState.list = [...safeList];
+    else vocabState.list = safeList.filter(v => v.cat === cat);
+
+    if (settings.srs) {
+      vocabState.list.sort((a, b) => {
+        if (!a || !b) return 0;
+        const ma = (userData.vocabMastery[a.word] || {}).correct || 0;
+        const mb = (userData.vocabMastery[b.word] || {}).correct || 0;
+        return ma - mb;
+      });
+    } else {
+      vocabState.list.sort(() => Math.random() - 0.5);
+    }
+    vocabState.idx = 0;
+  } catch(e) {
+    console.warn('filterVocabList error:', e);
+    vocabState.list = [];
+    vocabState.idx = 0;
+  }
+}
+function setVocabCat(cat, el) {
+  vocabState.cat = cat;
+  document.querySelectorAll('#page-vocab .config-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  filterVocabList();
+  loadVocabCard();
+}
+function loadVocabCard() {
+  if (!vocabState.list || !vocabState.list.length) filterVocabList();
+  // Guard: list masih kosong setelah filter
+  if (!vocabState.list || !vocabState.list.length) return;
+  const vocab = vocabState.list[vocabState.idx % vocabState.list.length];
+  // Guard: item tidak valid
+  if (!vocab || !vocab.word) {
+    vocabState.idx = 0;
+    return;
+  }
+  document.getElementById('vocab-word').textContent = vocab.word;
+  document.getElementById('vocab-type').textContent = vocab.type || '';
+  document.getElementById('vocab-meaning').textContent = vocab.meaning || '';
+  document.getElementById('vocab-ex-en').textContent = vocab.exEn || '';
+  document.getElementById('vocab-ex-id').textContent = '"' + (vocab.exId || '') + '"';
+  document.getElementById('vocab-input').value = '';
+  vocabState.pos = 0;
+  renderVocabTyping(vocab.exEn || '');
+  renderSrsBar(vocab.word);
+  if (settings.tts) speakVocab();
+}
+function renderSrsBar(word) {
+  const bar = document.getElementById('vocab-srs-bar');
+  if(!bar) return;
+  bar.innerHTML = '';
+  const mastery = (userData.vocabMastery[word] || {}).correct || 0;
+  const maxLevel = 5;
+  for(let i=0;i<maxLevel;i++){
+    const dot = document.createElement('div');
+    dot.className = 'srs-dot' + (i < mastery ? ' fill' : '');
+    dot.title = `Level ${i+1}`;
+    bar.appendChild(dot);
+  }
+}
+function renderVocabTyping(text) {
+  const container = document.getElementById('vocab-typing-display');
+  container.innerHTML = '';
+  text.split('').forEach((ch, i) => {
+    const span = document.createElement('span');
+    span.className = 'char ' + (i===0 ? 'current' : 'pending');
+    span.textContent = ch;
+    container.appendChild(span);
+  });
+}
+function handleVocabInput(e) {
+  const typed = e.target.value;
+  const vocab = vocabState.list[vocabState.idx % vocabState.list.length];
+  const text = vocab.exEn;
+  const spans = document.getElementById('vocab-typing-display').querySelectorAll('.char');
+  spans.forEach((span, i) => {
+    span.className = 'char';
+    if(i < typed.length) span.className = 'char ' + (typed[i] === text[i] ? 'correct' : 'wrong');
+    else if(i === typed.length) span.className = 'char current';
+    else span.className = 'char pending';
+  });
+  if(typed.length >= text.length && typed === text) {
+    vocabState.score += 10 * vocabState.combo;
+    vocabState.combo++;
+    vocabState.learned++;
+    userData.vocabLearned++;
+    // SRS update
+    if(!userData.vocabMastery[vocab.word]) userData.vocabMastery[vocab.word] = {seen:0,correct:0};
+    userData.vocabMastery[vocab.word].seen++;
+    userData.vocabMastery[vocab.word].correct = Math.min((userData.vocabMastery[vocab.word].correct||0)+1, 5);
+    const totalMastered = Object.values(userData.vocabMastery).filter(v => v.correct >= 3).length;
+    const mastery = Math.round((totalMastered / VOCAB_LIST.length) * 100);
+    document.getElementById('vocab-score').textContent = vocabState.score;
+    document.getElementById('vocab-combo').textContent = '×' + vocabState.combo;
+    document.getElementById('vocab-learned').textContent = vocabState.learned;
+    document.getElementById('vocab-mastery').textContent = mastery + '%';
+    addXP(20);
+    showToast('✓', `Correct! +20 XP · Combo ×${vocabState.combo}`);
+    saveUser();
+    if(settings.autonext) setTimeout(() => markVocab('easy'), 600);
+  }
+}
+function markVocab(difficulty) {
+  vocabState.idx++;
+  if(difficulty === 'hard') {
+    vocabState.combo = 1;
+    document.getElementById('vocab-combo').textContent = '×1';
+    const vocab = vocabState.list[vocabState.idx % vocabState.list.length];
+    if(vocab && userData.vocabMastery[vocab.word]) {
+      userData.vocabMastery[vocab.word].correct = Math.max(0, (userData.vocabMastery[vocab.word].correct||0)-1);
+    }
+  } else if(difficulty === 'medium') {
+    vocabState.combo = 1;
+    document.getElementById('vocab-combo').textContent = '×1';
+  }
+  loadVocabCard();
+}
+
+// ============================================================
+// ═══ CODE TYPING ═══
+// ============================================================
+function loadCodeChallenge() {
+  const challenges = CODE_CHALLENGES[codeState.lang] || CODE_CHALLENGES.html;
+  const c = challenges[codeState.challengeIdx % challenges.length];
+  document.getElementById('challenge-title').textContent = c.title;
+  document.getElementById('challenge-desc').textContent = c.desc;
+  const diffEl = document.getElementById('challenge-diff');
+  diffEl.textContent = c.diff.charAt(0).toUpperCase() + c.diff.slice(1);
+  diffEl.className = 'difficulty-badge diff-' + c.diff;
+  document.getElementById('panel-filename').textContent = c.filename;
+  document.getElementById('preview-label').textContent = codeState.lang === 'html' || codeState.lang === 'css' ? 'Live Preview' : 'Explanation';
+  codeState.typed = '';
+  codeState.errors = 0;
+  codeState.startTime = null;
+  document.getElementById('code-hidden-input').value = '';
+  renderCodeDisplay();
+  updatePreview('');
+  if(codeState.showExplain) renderExplanation();
+}
+
+function renderCodeDisplay() {
+  const challenges = CODE_CHALLENGES[codeState.lang] || CODE_CHALLENGES.html;
+  const c = challenges[codeState.challengeIdx % challenges.length];
+  const text = c.code;
+  const typed = codeState.typed;
+  const container = document.getElementById('code-display');
+  container.innerHTML = '';
+  const lines = text.split('\n');
+  let charIdx = 0;
+  const typedLen = typed.length;
+  // find active line
+  let activeLineIdx = 0, cumChars = 0;
+  for(let li=0;li<lines.length;li++){
+    const lineLen = lines[li].length + 1; // +1 for \n
+    if(cumChars + lineLen > typedLen && typedLen >= cumChars){ activeLineIdx = li; break; }
+    cumChars += lineLen;
+  }
+  lines.forEach((line, li) => {
+    const lineEl = document.createElement('div');
+    lineEl.style.display = 'flex';
+    lineEl.style.padding = '0 0 0 0';
+    if(li === activeLineIdx) lineEl.classList.add('code-line-active');
+    const ln = document.createElement('span');
+    ln.className = 'line-numbers';
+    ln.textContent = String(li + 1).padStart(2,' ');
+    lineEl.appendChild(ln);
+    const content = document.createElement('span');
+    const chars = (line + (li < lines.length - 1 ? '\n' : '')).split('');
+    chars.forEach(ch => {
+      const span = document.createElement('span');
+      span.className = 'char';
+      if(charIdx < typed.length) {
+        span.style.color = typed[charIdx] === ch ? 'var(--green)' : 'var(--red)';
+      } else if(charIdx === typed.length) {
+        span.style.color = 'var(--text)';
+        span.style.borderLeft = '2px solid var(--accent)';
+      } else {
+        span.style.color = 'var(--text3)';
+      }
+      span.textContent = ch === '\n' ? '↵' : (ch === ' ' ? '\u00a0' : ch);
+      if(ch === '\n') { span.style.color='var(--text3)'; span.style.fontSize='10px'; }
+      content.appendChild(span);
+      charIdx++;
+    });
+    lineEl.appendChild(content);
+    container.appendChild(lineEl);
+  });
+}
+
+function handleCodeInput(e) {
+  const challenges = CODE_CHALLENGES[codeState.lang] || CODE_CHALLENGES.html;
+  const c = challenges[codeState.challengeIdx % challenges.length];
+  const text = c.code;
+  if(!codeState.startTime && e.target.value.length > 0) codeState.startTime = Date.now();
+  codeState.typed = e.target.value;
+  renderCodeDisplay();
+  const typed = codeState.typed;
+  const correct = typed.split('').filter((ch, i) => ch === text[i]).length;
+  const elapsed = codeState.startTime ? (Date.now() - codeState.startTime) / 60000 : 0.001;
+  const wpm = elapsed > 0 ? Math.round((correct / 5) / elapsed) : 0;
+  const acc = typed.length > 0 ? Math.round((correct / typed.length) * 100) : 100;
+  const prog = Math.round((typed.length / text.length) * 100);
+  const errors = typed.length - correct;
+  document.getElementById('code-wpm').textContent = wpm;
+  document.getElementById('code-acc').textContent = acc + '%';
+  document.getElementById('code-progress').textContent = Math.min(prog, 100) + '%';
+  document.getElementById('code-errors').textContent = errors;
+  document.getElementById('code-wpm-display').textContent = wpm + ' WPM';
+  updatePreview(typed);
+  if(typed.length >= text.length) {
+    userData.codeCompleted++;
+    if(!userData.codeMastery[codeState.lang]) userData.codeMastery[codeState.lang] = 0;
+    userData.codeMastery[codeState.lang]++;
+    addXP(60);
+    saveUser();
+    showToast('🎉', 'Challenge complete! +60 XP');
+    setTimeout(() => nextChallenge(), 1500);
+  }
+}
+
+function handleCodeKey(e) {
+  if(e.key === 'Tab') {
+    e.preventDefault();
+    const inp = e.target;
+    const s = inp.selectionStart;
+    inp.value = inp.value.substring(0,s) + '  ' + inp.value.substring(s);
+    inp.selectionStart = inp.selectionEnd = s + 2;
+    handleCodeInput({target:inp});
+  }
+}
+
+function updatePreview(code) {
+  const frame = document.getElementById('preview-frame');
+  const lang = codeState.lang;
+  let html = '';
+  if(lang === 'html') html = code;
+  else if(lang === 'css') html = `<style>${code}</style><div class="demo" style="padding:16px">CSS Preview Box</div>`;
+  else if(lang === 'js') html = `<script>try{${code.replace(/console\.log/g,'document.write')}}catch(e){document.write('<span style=color:red>'+e+'</span>')}<\/script>`;
+  else html = `<pre style="font-family:'JetBrains Mono',monospace;font-size:13px;padding:16px;color:#333;white-space:pre-wrap;word-break:break-word">${code.replace(/</g,'&lt;')}</pre>`;
+  frame.srcdoc = `<html><body style="font-family:sans-serif;padding:16px;background:#fff;margin:0">${html}</body></html>`;
+}
+
+function setLang(lang, el) {
+  codeState.lang = lang;
+  codeState.challengeIdx = 0;
+  document.querySelectorAll('#lang-btns .config-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  loadCodeChallenge();
+}
+function nextChallenge() {
+  codeState.challengeIdx++;
+  loadCodeChallenge();
+}
+function toggleExplanation() {
+  codeState.showExplain = !codeState.showExplain;
+  const panel = document.getElementById('code-explain-panel');
+  if(codeState.showExplain) { panel.style.display='block'; renderExplanation(); }
+  else panel.style.display='none';
+}
+function renderExplanation() {
+  const challenges = CODE_CHALLENGES[codeState.lang] || CODE_CHALLENGES.html;
+  const c = challenges[codeState.challengeIdx % challenges.length];
+  const container = document.getElementById('explain-tokens');
+  container.innerHTML = '';
+  if(!c.explain) { container.textContent = 'No explanation available for this challenge.'; return; }
+  c.explain.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'explain-token';
+    div.innerHTML = `<span class="et-token">${item.token}</span><span class="et-desc">${item.desc}</span>`;
+    container.appendChild(div);
+  });
+}
+
+// ============================================================
+// ═══ RACE MODE (preserved + countdown) ═══
+// ============================================================
+const BOT_NAMES = [
+  {name:"SpeedBot",flag:"🤖",color:"#7c6af7"},
+  {name:"QuickAI",flag:"🤖",color:"#5de0c5"},
+  {name:"TypeBot",flag:"🤖",color:"#f7b96a"},
+  {name:"RaceAI",flag:"🤖",color:"#f76a6a"}
+];
+function initRacers() {
+  const container = document.getElementById('racers-container');
+  container.innerHTML = '';
+  const playerRacer = createRacerEl({name:'You',flag:'🏃',color:'#7c6af7'}, 'player-racer');
+  container.appendChild(playerRacer);
+  BOT_NAMES.forEach((bot, i) => {
+    const el = createRacerEl(bot, 'bot-racer-' + i);
+    container.appendChild(el);
+  });
+  raceState.bots = BOT_NAMES.map((b, i) => ({...b, progress:0, wpm:40+Math.random()*60, id:'bot-racer-'+i}));
+}
+function createRacerEl(racer, id) {
+  const div = document.createElement('div');
+  div.className = 'racer';
+  div.id = id;
+  div.innerHTML = `
+    <div class="racer-avatar" style="background:${racer.color||'#7c6af7'}20;color:${racer.color||'#7c6af7'}">${racer.flag||'🏃'}</div>
+    <div class="racer-name">${racer.name}</div>
+    <div class="racer-track"><div class="racer-progress" id="${id}-bar" style="width:0%;background:${racer.color||'#7c6af7'}"></div></div>
+    <div class="racer-wpm" id="${id}-wpm">0 WPM</div>`;
+  return div;
+}
+function setRaceType(type, el) {
+  raceState.type = type;
+  document.querySelectorAll('#page-race .config-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+}
+function startRace() {
+  if(raceState.active) return;
+  const sentences = SENTENCES.english;
+  raceState.text = sentences[Math.floor(Math.random() * sentences.length)].en;
+  raceState.pos = 0;
+  raceState.bots.forEach(b => b.progress = 0);
+  renderRaceText();
+  document.getElementById('race-input').value = '';
+  // countdown
+  showCountdown(() => {
+    raceState.startTime = Date.now();
+    raceState.active = true;
+    document.getElementById('race-input').disabled = false;
+    document.getElementById('race-input').focus();
+    document.getElementById('race-start-btn').textContent = '🔄 Restart';
+    document.getElementById('race-start-btn').onclick = () => { stopRace(); startRace(); };
+    // bot movement
+    raceState.interval = setInterval(() => {
+      raceState.bots.forEach(b => {
+        const elapsed = (Date.now() - raceState.startTime) / 60000;
+        const charsTyped = b.wpm * 5 * elapsed;
+        b.progress = Math.min(charsTyped / raceState.text.length, 1);
+        const bar = document.getElementById(b.id + '-bar');
+        const wpmEl = document.getElementById(b.id + '-wpm');
+        if(bar) bar.style.width = (b.progress * 100) + '%';
+        if(wpmEl) wpmEl.textContent = Math.round(b.wpm) + ' WPM';
+      });
+      if(raceState.bots.some(b => b.progress >= 1)) clearInterval(raceState.interval);
+    }, 200);
+  });
+}
+function showCountdown(cb) {
+  const overlay = document.getElementById('countdown-overlay');
+  const numEl = document.getElementById('countdown-num');
+  overlay.style.display = 'flex';
+  let c = 3;
+  numEl.textContent = c;
+  const timer = setInterval(() => {
+    c--;
+    if(c <= 0) {
+      clearInterval(timer);
+      overlay.style.display = 'none';
+      cb();
+    } else {
+      numEl.textContent = c;
+      // re-trigger animation
+      numEl.style.animation = 'none';
+      void numEl.offsetWidth;
+      numEl.style.animation = 'countPulse 0.9s ease';
+    }
+  }, 1000);
+}
+function stopRace() {
+  clearInterval(raceState.interval);
+  raceState.active = false;
+  document.getElementById('race-input').disabled = true;
+  document.getElementById('race-start-btn').textContent = '🚀 Start Race';
+  document.getElementById('race-start-btn').onclick = startRace;
+  initRacers();
+}
+function renderRaceText() {
+  const container = document.getElementById('race-text-display');
+  container.innerHTML = '';
+  raceState.text.split('').forEach((ch, i) => {
+    const span = document.createElement('span');
+    span.className = 'char ' + (i===0 ? 'current' : 'pending');
+    span.textContent = ch;
+    container.appendChild(span);
+  });
+}
+function handleRaceInput(e) {
+  if(!raceState.active) return;
+  const typed = e.target.value;
+  const text = raceState.text;
+  const spans = document.getElementById('race-text-display').querySelectorAll('.char');
+  spans.forEach((span, i) => {
+    span.className = 'char';
+    if(i < typed.length) span.className = 'char ' + (typed[i] === text[i] ? 'correct' : 'wrong');
+    else if(i === typed.length) span.className = 'char current';
+    else span.className = 'char pending';
+  });
+  const correct = typed.split('').filter((ch, i) => ch === text[i]).length;
+  const elapsed = (Date.now() - raceState.startTime) / 60000;
+  const wpm = elapsed > 0 ? Math.round((correct / 5) / elapsed) : 0;
+  const prog = Math.round((typed.length / text.length) * 100);
+  document.getElementById('race-wpm').textContent = wpm;
+  document.getElementById('race-prog').textContent = Math.min(prog, 100) + '%';
+  const playerBar = document.getElementById('player-racer-bar');
+  const playerWpmEl = document.getElementById('player-racer-wpm');
+  if(playerBar) playerBar.style.width = Math.min(typed.length / text.length * 100, 100) + '%';
+  if(playerWpmEl) playerWpmEl.textContent = wpm + ' WPM';
+  const playerProg = typed.length / text.length;
+  const ahead = raceState.bots.filter(b => b.progress < playerProg).length;
+  document.getElementById('race-pos').textContent = (BOT_NAMES.length + 1 - ahead) + '/' + (BOT_NAMES.length + 1);
+  if(typed.length >= text.length) {
+    clearInterval(raceState.interval);
+    raceState.active = false;
+    document.getElementById('race-input').disabled = true;
+    addXP(100);
+    saveUser();
+    const pos = BOT_NAMES.length + 1 - ahead;
+    showToast(pos===1?'🥇':'🏆', `Race finished! Pos #${pos} · +100 XP`);
+  }
+}
+function handleRaceKey(e) {
+  if(e.key === 'Enter' && !raceState.active) startRace();
+}
+
+// ============================================================
+// ═══ FOCUS MODE ═══
+// ============================================================
+function setupFocusModeKeyboard() {
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') closeFocusMode();
+  });
+}
+function startFocusMode() {
+  const overlay = document.getElementById('focus-overlay');
+  overlay.classList.add('show');
+  // load a sentence
+  const arr = SENTENCES.english;
+  const s = arr[Math.floor(Math.random() * arr.length)];
+  focusState.text = s.en;
+  renderFocusText();
+  document.getElementById('focus-input').value='';
+  document.getElementById('focus-input').focus();
+}
+function closeFocusMode() {
+  document.getElementById('focus-overlay').classList.remove('show');
+  clearInterval(focusState.timer);
+  focusState.active2 = false;
+}
+function renderFocusText() {
+  const el = document.getElementById('focus-text-display');
+  el.innerHTML = '';
+  focusState.chars = focusState.text.split('').map((ch,i) => {
+    const span = document.createElement('span');
+    span.className = 'char ' + (i===0?'current':'pending');
+    span.textContent = ch;
+    el.appendChild(span);
+    return {el:span,ch};
+  });
+}
+function handleFocusInput(e) {
+  const typed = e.target.value;
+  const text = focusState.text;
+  if(!focusState.active2 && typed.length > 0) {
+    focusState.active2 = true;
+    focusState.startTime = Date.now();
+  }
+  focusState.chars.forEach((c,i) => {
+    c.el.className = 'char';
+    if(i < typed.length) c.el.className = 'char ' + (typed[i]===c.ch?'correct':'wrong');
+    else if(i === typed.length) c.el.className = 'char current';
+    else c.el.className = 'char pending';
+  });
+  const correct = typed.split('').filter((ch,i) => ch===text[i]).length;
+  const elapsed = focusState.startTime ? (Date.now()-focusState.startTime)/60000 : 0.001;
+  const wpm = Math.round((correct/5)/elapsed)||0;
+  const acc = typed.length ? Math.round((correct/typed.length)*100) : 100;
+  const secs = Math.round(elapsed*60);
+  document.getElementById('focus-wpm').textContent = wpm;
+  document.getElementById('focus-acc').textContent = acc+'%';
+  document.getElementById('focus-timer').textContent = secs+'s';
+  if(typed === text) {
+    focusState.active2 = false;
+    addXP(30);saveUser();
+    const arr = SENTENCES.english;
+    const s = arr[Math.floor(Math.random()*arr.length)];
+    focusState.text = s.en;
+    e.target.value = '';
+    renderFocusText();
+  }
+}
+
+// ============================================================
+// ═══ LEADERBOARD ═══
+// ============================================================
+function populateLeaderboard() {
+  const tbody = document.getElementById('lb-tbody');
+  const data = [...LEADERBOARD_DATA];
+  data.push({
+    name: userData.username + ' (You)', flag:'🇮🇩',
+    wpm: userData.bestWpm,
+    acc: userData.accuracyHistory.length ? Math.round(userData.accuracyHistory.reduce((a,b)=>a+b,0)/userData.accuracyHistory.length)+'%' : '—',
+    tests: userData.totalTests, xp: userData.xp, isYou:true
+  });
+  data.sort((a,b) => b.wpm - a.wpm);
+  tbody.innerHTML = '';
+  data.forEach((player, i) => {
+    const tr = document.createElement('tr');
+    if(player.isYou) tr.className = 'lb-you';
+    const rankClass = i===0?'top1':i===1?'top2':i===2?'top3':'';
+    tr.innerHTML = `
+      <td><span class="lb-rank ${rankClass}">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</span></td>
+      <td><span class="lb-name"><span class="country-flag">${player.flag||'🌐'}</span>${player.name}</span></td>
+      <td><span class="lb-wpm">${player.wpm}</span></td>
+      <td><span class="lb-acc">${player.acc}</span></td>
+      <td style="color:var(--text3)">${player.tests}</td>
+      <td style="color:var(--text2);font-family:var(--font-data)">${(player.xp||0).toLocaleString()}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+function setLbFilter(f, el) {
+  document.querySelectorAll('#page-leaderboard .config-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  populateLeaderboard();
+}
+
+// ============================================================
+// ═══ STATS PAGE ═══
+// ============================================================
+function updateStatsPage() {
+  const history = userData.wpmHistory;
+  const best = history.length ? Math.max(...history) : 0;
+  const avg = history.length ? Math.round(history.reduce((a,b)=>a+b,0)/history.length) : 0;
+  const bestAcc = userData.accuracyHistory.length ? Math.max(...userData.accuracyHistory) + '%' : '—';
+  const totalMin = Math.round(userData.totalTime);
+  document.getElementById('st-bestwpm').textContent = best;
+  document.getElementById('st-avgwpm').textContent = avg;
+  document.getElementById('st-bestacc').textContent = bestAcc;
+  document.getElementById('st-time').textContent = totalMin + 'm';
+
+  // WPM chart
+  const chartEl = document.getElementById('wpm-chart-bars');
+  chartEl.innerHTML = '';
+  const maxWpm = best || 1;
+  history.forEach((w, i) => {
+    const bar = document.createElement('div');
+    const h = ((w / maxWpm) * 90) + 5;
+    bar.style.cssText = `flex:1;min-width:6px;height:${h}px;background:linear-gradient(to top,var(--accent),rgba(124,106,247,0.3));border-radius:3px 3px 0 0;cursor:pointer;transition:height 0.3s`;
+    bar.title = `Test #${i+1}: ${w} WPM`;
+    bar.onmouseenter = () => bar.style.background = 'var(--accent2)';
+    bar.onmouseleave = () => bar.style.background = 'linear-gradient(to top,var(--accent),rgba(124,106,247,0.3))';
+    chartEl.appendChild(bar);
+  });
+
+  updateHeatmap('stats-keyboard');
+  renderAchievements('achievements-grid');
+  renderMastery();
+  generateStatsInsight(avg, best);
+}
+
+function renderMastery() {
+  const el = document.getElementById('mastery-list');
+  if(!el) return;
+  el.innerHTML = '';
+  const items = [
+    {label:'English Typing', pct: Math.min(Math.round((userData.totalTests/50)*100),100)},
+    {label:'Vocabulary', pct: Math.min(Math.round((userData.vocabLearned/VOCAB_LIST.length)*100),100)},
+    {label:'Code - HTML', pct: Math.min(Math.round(((userData.codeMastery?.html||0)/4)*100),100)},
+    {label:'Code - JS', pct: Math.min(Math.round(((userData.codeMastery?.js||0)/4)*100),100)},
+    {label:'Code - Python', pct: Math.min(Math.round(((userData.codeMastery?.py||0)/3)*100),100)},
+    {label:'Race Mode', pct: Math.min(userData.totalTests*5,100)},
+  ];
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'mastery-item';
+    row.innerHTML = `<span class="mastery-label">${item.label}</span><div class="mastery-bar-wrap"><div class="mastery-bar" style="width:${item.pct}%"></div></div><span class="mastery-pct">${item.pct}%</span>`;
+    el.appendChild(row);
+  });
+}
+
+function generateStatsInsight(avg, best) {
+  const el = document.getElementById('stats-ai-insight');
+  if(!el) return;
+  const weakKeys = Object.entries(userData.keyErrors).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k]) => k.toUpperCase());
+  let insight = '';
+  if(userData.totalTests === 0) { insight = 'Belum ada data. Mulai latihan sekarang!'; }
+  else if(avg < 30) { insight = `Avg WPM kamu ${avg}. Fokus pada akurasi dulu — mengetik dengan benar lebih penting dari kecepatan.`; }
+  else if(avg < 60) { insight = `Avg WPM kamu ${avg}. Coba latihan selama 15 menit sehari untuk naik ke 60+ WPM dalam 2 minggu.`; }
+  else if(avg < 90) { insight = `Avg WPM kamu ${avg}. Kamu sudah di atas rata-rata! Fokus pada konsistensi akurasi 95%+.`; }
+  else { insight = `🏆 Avg WPM kamu ${avg} — luar biasa! Kamu sudah di level advanced typist.`; }
+  if(weakKeys.length) insight += ` Key yang paling sering error: <strong style="color:var(--red)">${weakKeys.join(', ')}</strong>. Latih key tersebut secara khusus.`;
+  if(userData.vocabLearned > 0) insight += ` Kamu sudah menguasai <strong style="color:var(--accent2)">${userData.vocabLearned} kata</strong> vocabulary.`;
+  el.innerHTML = insight;
+}
+
+// ============================================================
+// ═══ PROFILE PAGE ═══
+// ============================================================
+function updateProfilePage() {
+  const initials = userData.username.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || 'TC';
+  document.getElementById('prof-avatar').textContent = initials;
+  document.getElementById('user-avatar').textContent = initials;
+  document.getElementById('prof-name').textContent = userData.username;
+  document.getElementById('prof-level').textContent = userData.level;
+  document.getElementById('prof-xp').textContent = userData.xp;
+  document.getElementById('prof-streak').textContent = userData.streak;
+  document.getElementById('prof-tests').textContent = userData.totalTests;
+  document.getElementById('prof-wpm').textContent = userData.bestWpm;
+  document.getElementById('prof-vocab').textContent = userData.vocabLearned;
+  document.getElementById('prof-code').textContent = userData.codeCompleted;
+  // rank badge
+  const rankEl = document.getElementById('prof-rank-badge');
+  if(rankEl) {
+    const wpm = userData.bestWpm;
+    let rank = '🥉 Beginner';
+    if(wpm >= 100) rank = '💎 Diamond';
+    else if(wpm >= 80) rank = '🥇 Expert';
+    else if(wpm >= 60) rank = '🥈 Advanced';
+    else if(wpm >= 40) rank = '🏅 Intermediate';
+    else if(wpm >= 20) rank = '🥉 Beginner';
+    rankEl.textContent = rank;
+  }
+  // XP bar
+  const xpNeeded = userData.level * 500;
+  const xpCurrent = userData.xp - ((userData.level-1) * 500);
+  const pct = Math.min(Math.round((xpCurrent / xpNeeded) * 100), 100);
+  document.getElementById('prof-xp-bar').style.width = pct + '%';
+  document.getElementById('prof-xp-current').textContent = xpCurrent;
+  document.getElementById('prof-xp-next').textContent = xpNeeded;
+  renderAchievements('profile-achievements');
+}
+
+function updateDashboard() {
+  document.getElementById('hero-name').textContent = userData.username;
+  document.getElementById('stat-bestwpm').textContent = userData.bestWpm;
+  const avgAcc = userData.accuracyHistory.length
+    ? Math.round(userData.accuracyHistory.reduce((a,b)=>a+b,0)/userData.accuracyHistory.length)+'%' : '—';
+  document.getElementById('stat-acc').textContent = avgAcc;
+  document.getElementById('stat-tests').textContent = userData.totalTests;
+  document.getElementById('stat-streak').textContent = userData.streak;
+  // wpm history chart
+  const el = document.getElementById('wpm-history-chart');
+  if(!el) return;
+  el.innerHTML = '';
+  const hist = userData.wpmHistory;
+  const mx = hist.length ? Math.max(...hist) : 1;
+  hist.forEach((w,i) => {
+    const b = document.createElement('div');
+    b.className = 'history-bar';
+    b.style.height = Math.max((w/mx*70),4) + 'px';
+    b.title = `Test #${i+1}: ${w} WPM`;
+    el.appendChild(b);
+  });
+}
+
+function updateTopbar() {
+  document.getElementById('tb-wpm').textContent = userData.bestWpm;
+  document.getElementById('tb-streak').textContent = userData.streak;
+  document.getElementById('tb-xp').textContent = userData.xp;
+}
+
+// ============================================================
+// ═══ AI TUTOR ═══
+// ============================================================
+function generateTutorTip() {
+  const main = document.getElementById('tutor-main-tip');
+  const rec = document.getElementById('tutor-rec');
+  if(!main) return;
+  const tips = [
+    {tip:'Untuk meningkatkan WPM, fokuslah pada <strong>ritme yang konsisten</strong> daripada mengetik cepat tapi sering salah.', rec:'→ Coba <span onclick="navigate(\'typing\')">Typing Test</span> dengan mode 60s'},
+    {tip:'Belajar kosakata melalui <strong>konteks kalimat</strong> jauh lebih efektif dari menghafal daftar kata saja.', rec:'→ Latih sekarang di <span onclick="navigate(\'vocab\')">Vocabulary Mode</span>'},
+    {tip:'Mengetik kode setiap hari melatih <strong>muscle memory</strong> untuk simbol-simbol khusus seperti {}, (), [], dll.', rec:'→ Coba <span onclick="navigate(\'coding\')">Code Typing</span> dengan JavaScript'},
+    {tip:'Konsistensi lebih penting dari intensitas. <strong>15 menit setiap hari</strong> lebih baik dari 2 jam seminggu sekali.', rec:'→ Set daily reminder dan gunakan <span onclick="startFocusMode()">Focus Mode</span>'},
+    {tip:'Saat akurasi di bawah 90%, berarti kamu mengetik terlalu cepat. <strong>Perlambat → tingkatkan akurasi → naikkan kecepatan</strong>.', rec:'→ Gunakan mode <span onclick="setTimeLimit(120,null);navigate(\'typing\')">120s</span> untuk latihan lebih panjang'},
+  ];
+  const tip = tips[Math.floor(Math.random()*tips.length)];
+  main.innerHTML = tip.tip;
+  if(rec) rec.innerHTML = tip.rec;
+}
+
+// ============================================================
+// ═══ DAILY CHALLENGE ═══
+// ============================================================
+const DAILY_CHALLENGES = [
+  {name:'Speed Run 30s',desc:'Selesaikan 30s test dengan 90%+ akurasi. Reward: 200 XP'},
+  {name:'Vocab Marathon',desc:'Pelajari 10 kata vocabulary hari ini. Reward: 150 XP'},
+  {name:'Code Challenge',desc:'Selesaikan 3 coding challenge. Reward: 180 XP'},
+  {name:'English Sentence',desc:'Ketik 5 kalimat English dengan sempurna. Reward: 120 XP'},
+  {name:'Race Champion',desc:'Finish Race Mode di posisi #1. Reward: 250 XP'},
+];
+function updateDailyChallenge() {
+  const today = new Date().getDay();
+  const ch = DAILY_CHALLENGES[today % DAILY_CHALLENGES.length];
+  const nameEl = document.getElementById('daily-challenge-name');
+  const descEl = document.getElementById('daily-challenge-desc');
+  if(nameEl) nameEl.textContent = ch.name;
+  if(descEl) descEl.textContent = ch.desc;
+}
+function startDailyChallenge() {
+  const today = new Date().getDay();
+  const ch = DAILY_CHALLENGES[today % DAILY_CHALLENGES.length];
+  if(ch.name.includes('Vocab')) navigate('vocab');
+  else if(ch.name.includes('Code')) navigate('coding');
+  else if(ch.name.includes('Race')) navigate('race');
+  else navigate('typing');
+  showToast('🎯','Daily Challenge dimulai! Selesaikan untuk bonus XP.');
+}
+
+// ============================================================
+// ═══ ACHIEVEMENTS ═══
+// ============================================================
+function renderAchievements(containerId) {
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '';
+  ACHIEVEMENTS.forEach(ach => {
+    let unlocked = false;
+    if(ach.type==='wpm') unlocked = userData.bestWpm >= ach.req;
+    else if(ach.type==='tests') unlocked = userData.totalTests >= ach.req;
+    else if(ach.type==='acc') unlocked = userData.accuracyHistory.some(a => a >= ach.req);
+    else if(ach.type==='streak') unlocked = userData.streak >= ach.req;
+    else if(ach.type==='vocab') unlocked = userData.vocabLearned >= ach.req;
+    else if(ach.type==='code') unlocked = userData.codeCompleted >= ach.req;
+    const div = document.createElement('div');
+    div.className = 'achievement' + (unlocked ? ' unlocked' : ' ach-locked');
+    div.innerHTML = `<div class="ach-icon">${ach.icon}</div><div class="ach-name">${ach.name}</div><div class="ach-desc">${ach.desc}</div>`;
+    container.appendChild(div);
+  });
+}
+function checkAchievements() {
+  ACHIEVEMENTS.forEach(ach => {
+    if(userData.unlockedAchievements.includes(ach.id)) return;
+    let earned = false;
+    if(ach.type==='wpm') earned = userData.bestWpm >= ach.req;
+    else if(ach.type==='tests') earned = userData.totalTests >= ach.req;
+    else if(ach.type==='acc') earned = userData.accuracyHistory.some(a => a >= ach.req);
+    else if(ach.type==='streak') earned = userData.streak >= ach.req;
+    else if(ach.type==='vocab') earned = userData.vocabLearned >= ach.req;
+    else if(ach.type==='code') earned = userData.codeCompleted >= ach.req;
+    if(earned) {
+      userData.unlockedAchievements.push(ach.id);
+      setTimeout(() => showToast(ach.icon, '🏅 Achievement: ' + ach.name), 500);
+    }
+  });
+  saveUser();
+}
+
+// ============================================================
+// ═══ XP & LEVELING ═══
+// ============================================================
+function addXP(amount) {
+  if(!amount) return;
+  userData.xp += amount;
+  const needed = userData.level * 500;
+  if(userData.xp >= needed) {
+    userData.level++;
+    document.getElementById('new-level-num').textContent = userData.level;
+    const banner = document.getElementById('level-up-banner');
+    banner.classList.add('show');
+    setTimeout(() => banner.classList.remove('show'), 3000);
+    if(settings.sound) playLevelUpSound();
+  }
+  updateTopbar();
+  saveUser();
+}
+function showXpPopup(xp) {
+  const el = document.getElementById('xp-popup');
+  el.textContent = '+' + xp + ' XP 🎉';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 1400);
+}
+
+// ============================================================
+// ═══ SETTINGS ═══
+// ============================================================
+function toggleSetting(key) {
+  settings[key] = !settings[key];
+  const toggle = document.getElementById('toggle-' + key);
+  if(toggle) toggle.classList.toggle('on', settings[key]);
+  localStorage.setItem('typecraft_settings', JSON.stringify(settings));
+  applySettings();
+}
+function applySettings() {
+  const sz = settings.fontSize + 'px';
+  document.querySelectorAll('.typing-display').forEach(el => el.style.fontSize = sz);
+  const kb = document.getElementById('keyboard-section');
+  if(kb) kb.style.display = settings.keyboard ? 'block' : 'none';
+  if(settings.dyslexia) document.body.style.fontFamily = 'Arial, sans-serif';
+  else document.body.style.fontFamily = '';
+  // apply saved toggles
+  Object.keys(settings).forEach(k => {
+    const toggle = document.getElementById('toggle-' + k);
+    if(toggle) toggle.classList.toggle('on', settings[k]);
+  });
+}
+function setTheme(theme, el) {
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const themes = {
+    default:['#7c6af7','#5de0c5'],
+    sunset:['#f76a6a','#f7b96a'],
+    ocean:['#3b82f6','#5de0a0'],
+    candy:['#a78bfa','#ec4899'],
+    matrix:['#00ff41','#00cc33'],
+    cyberpunk:['#ff6b6b','#c44dff'],
+  };
+  const [a, b] = themes[theme] || themes.default;
+  document.documentElement.style.setProperty('--accent', a);
+  document.documentElement.style.setProperty('--accent2', b);
+  localStorage.setItem('typecraft_theme', JSON.stringify({theme,a,b}));
+}
+function setFontSize(size) {
+  settings.fontSize = parseInt(size);
+  applySettings();
+  localStorage.setItem('typecraft_settings', JSON.stringify(settings));
+}
+function updateUsername(name) {
+  if(!name || !name.trim()) return;
+  userData.username = name.trim();
+  const initials = name.trim().split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'TC';
+  document.getElementById('hero-name').textContent = name;
+  document.getElementById('user-avatar').textContent = initials;
+  document.getElementById('prof-avatar').textContent = initials;
+  document.getElementById('prof-name').textContent = name;
+  saveUser();
+}
+function resetProgress() {
+  if(!confirm('Reset semua progress kamu? Ini tidak bisa di-undo.')) return;
+  const name = userData.username;
+  userData = {
+    username:name,xp:0,level:1,streak:0,lastDay:null,
+    bestWpm:0,totalTests:0,totalTime:0,
+    wpmHistory:[],accuracyHistory:[],keyErrors:{},
+    vocabLearned:0,codeCompleted:0,unlockedAchievements:[],
+    weakKeys:[],weakTopics:[],vocabMastery:{},codeMastery:{},englishCat:'all'
+  };
+  saveUser();
+  updateTopbar();
+  updateDashboard();
+  showToast('🗑️','Progress direset!');
+}
+function exportData() {
+  const data = JSON.stringify({userData, settings}, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'typecraft_data.json';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('💾','Data diekspor!');
+}
+
+// ============================================================
+// ═══ TOAST ═══
+// ============================================================
+let toastTimer = null;
+function showToast(icon, msg) {
+  try {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-icon').textContent = icon;
+    document.getElementById('toast-msg').textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+  } catch(e) {}
+}
+
+// ============================================================
+// ═══ STREAKS ═══
+// ============================================================
+function checkStreaks() {
+  const today = new Date().toDateString();
+  if(userData.lastDay === today) return;
+  const yesterday = new Date(Date.now()-86400000).toDateString();
+  if(userData.lastDay === yesterday) { userData.streak++; }
+  else if(userData.lastDay && userData.lastDay !== yesterday) { userData.streak = 1; }
+  else { userData.streak = Math.max(userData.streak, 1); }
+  userData.lastDay = today;
+  saveUser();
+  updateTopbar();
+}
+
+// ============================================================
+// ═══ SOUND ═══
+// ============================================================
+function playKeySound(isError) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = isError ? 200 : 440 + Math.random() * 80;
+    osc.type = isError ? 'square' : 'sine';
+    gain.gain.setValueAtTime(0.04, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+    osc.start(); osc.stop(ctx.currentTime + 0.06);
+  } catch(e) {}
+}
+function playLevelUpSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [440,554,659,880].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq; osc.type = 'sine';
+      const t = ctx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0.1, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      osc.start(t); osc.stop(t + 0.2);
+    });
+  } catch(e) {}
+}
+
+// ============================================================
+// ═══ SAVE / LOAD ═══
+// ============================================================
+function saveUser() {
+  try {
+    localStorage.setItem('typecraft_user', JSON.stringify(userData));
+  } catch(e) { console.error('Save error:', e); }
+}
+
+// ============================================================
+// ═══ RESTORE THEME ON LOAD ═══
+// ============================================================
+(function restoreTheme() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('typecraft_theme') || 'null');
+    if(saved) {
+      document.documentElement.style.setProperty('--accent', saved.a);
+      document.documentElement.style.setProperty('--accent2', saved.b);
+    }
+  } catch(e) {}
+})();
+</script>
+<script src="python-trainer.js"></script>
+
+<script src="html-trainer.js"></script>
+<script src="coding-trainer.js"></script>
+<script src="english-trainer.js"></script>
+</body>
+</html>
